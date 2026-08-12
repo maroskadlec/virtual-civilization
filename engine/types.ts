@@ -214,6 +214,8 @@ export type DisasterId =
  * Pozdější LLM vrstva přepíše jen `text` — engine se nemění.
  */
 export interface WorldEvent {
+  /** Pořadí civilizace, ve které se to stalo — kronika se podle něj rotuje. */
+  run: number;
   tick: number;
   year: number;
   kind: EventKind;

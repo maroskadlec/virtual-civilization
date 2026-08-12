@@ -12,9 +12,11 @@ Inspirací byl [michalstrnadel/lili-octopus](https://github.com/michalstrnadel/l
 
 ## Stav
 
-Hotové jsou fáze **M1 a M2** — deterministický engine s úplným obsahem
-a kronika v terminálu. Vizualizace zatím žádná; nejdřív musí být jisté,
-že vygenerované dějiny stojí za čtení.
+Hotové jsou fáze **M1 až M3** — deterministický engine s úplným obsahem,
+kronika v terminálu a **běžící web**. Abstraktní vizualizace (mapa světa,
+spirála času, souhvězdí milníků) přijdou v M4; zatím je na webu kronika.
+
+**→ [maroskadlec.github.io/virtual-civilization](https://maroskadlec.github.io/virtual-civilization/)**
 
 **161 milníků** ve 14 epochách, od ohně po tichou otázku. Každá epocha
 trvá kolem 500 ticků, celý oblouk civilizace tedy zhruba **7000 ticků
@@ -128,15 +130,62 @@ civilizace sama. Od chvíle, kdy stojí továrny, se teplo načítá; zastavit t
 jen obnovitelnou sítí, fúzí, jádrem nebo klimatickým inženýrstvím. Někdo to
 stihne, někdo ne.
 
+## Nasazení
+
+Jeden workflow (`.github/workflows/tick.yml`) běží po půlhodině a dělá tři věci:
+posune civilizaci na aktuální čas, commitne checkpoint a nasadí web na GitHub Pages.
+Schválně je to jeden workflow — kdyby to byly dva, mohl by nastat stav, kdy jsou
+v repu čerstvá data, ale nasazená stránka je starší.
+
+**Simulace na tom běhu ale nestojí.** Zdrojem pravdy je genesis timestamp a seed;
+runner jen předpočítává to, co si klient umí dopočítat sám. Když workflow týden
+neběží, web ukazuje správný stav dál — prohlížeč si prostě spočítá o pár set
+ticků víc. Ověřuje to test, který nechá simulaci přerušit, poslat přes JSON
+a dopočítat, a porovná výsledek s výpočtem vcelku.
+
+Datové soubory v `data/`:
+
+| soubor | co je uvnitř |
+|---|---|
+| `world.json` | checkpoint kampaně — svět, archiv, globální tick |
+| `chronicle.jsonl` | kronika probíhající civilizace, jeden zápis na řádek |
+| `archive/run-NNNN.jsonl` | uzavřené kroniky zaniklých civilizací |
+| `recent.json` | posledních 300 zápisů pro rychlé první vykreslení |
+| `status.json` | shrnutí; jeho `headline` se používá jako zpráva commitu |
+
+Zprávy commitů proto nesou skutečné dějinné události — **`git log` je kronika**.
+
+> GitHub vypíná naplánované workflow po 60 dnech neaktivity repozitáře a commity
+> pod `GITHUB_TOKEN` se do aktivity nepočítají. Pro dlouhodobý běh bez zásahu
+> vyměň token ve workflow za PAT v secrets.
+
+Lokálně:
+
+```bash
+npm run dev              # web na localhostu
+npm run sim              # posunout kampaň na teď a zapsat data
+npm run sim -- --dry-run # spočítat a jen vypsat
+```
+
+Kampaň se založí sama, když `data/world.json` neexistuje. Pro rychlý test
+s civilizací, která už něco umí, jde genesis posunout do minulosti:
+
+```bash
+npm run sim -- --backdate-days 40
+```
+
 ## Struktura
 
 ```
 engine/    čistý TypeScript bez DOM — běží v Node i v prohlížeči
+  campaign.ts           jediné místo, kde se potkají hodiny se simulací
   milestones.early.ts   epochy 0–3
   milestones.late.ts    epochy 4–13
   milestones.data.ts    rejstřík a měřítka cen
-tools/     chronicle-cli.ts (kronika, kampaň, sweep) · calibrate.ts
-tests/     determinismus a integrita stromu milníků
+web/       statický web (Vite) — načte checkpoint a dopočítá zbytek
+tools/     chronicle-cli.ts · sim-runner.ts · calibrate.ts
+data/      commitovaný checkpoint a kronika
+tests/     determinismus, kampaň, integrita stromu milníků
 ```
 
 Engine nesmí použít `Math.random`, `Date.now` ani `new Date()` — hlídá to ESLint.
@@ -155,7 +204,6 @@ budoucí nasazení: server commituje checkpoint, klient si od něj dopočítá z
 
 ## Dál
 
-- **M3** — checkpointy, GitHub Action, statický web
 - **M4** — vizualizace: kruhová mapa světa, logaritmická spirála času, souhvězdí milníků (2D, Canvas + SVG + GSAP)
 - **M5** — predikce metodou Monte Carlo a jejich zpětné vyhodnocení
 - **M6** — archiv minulých civilizací, volitelná LLM vrstva kroniky

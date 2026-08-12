@@ -10,7 +10,8 @@
  */
 
 import { createWorld } from '../engine/world.js';
-import { genesisEvent, researchOutput, simulate, simulateCampaign, tickWorld } from '../engine/tick.js';
+import { genesisEvent, researchOutput, simulate, tickWorld } from '../engine/tick.js';
+import { simulateCampaign } from '../engine/campaign.js';
 import { epochDef, formatYear, yearsPerTick } from '../engine/epochs.js';
 import { planetNotes, BIOME_LABEL } from '../engine/planet.js';
 import { EPOCH_COST_SCALE, MILESTONES, MAX_CONTENT_EPOCH } from '../engine/milestones.data.js';
@@ -317,11 +318,12 @@ function printArchive(archive: RunSummary[]): void {
 
 /** Posloupnost civilizací — tak, jak web poběží doopravdy. */
 function runCampaign(seed: number, ticks: number, minWeight: number): void {
-  const { world, events, archive } = simulateCampaign(seed, ticks);
+  const { campaign, events } = simulateCampaign(seed, ticks);
+  const world = campaign.world;
   for (const e of events) {
     if (e.weight >= minWeight) printEvent(e, world.foundingYear);
   }
-  printArchive(archive);
+  printArchive(campaign.archive);
   console.log(`\n${C.bold}PRÁVĚ BĚŽÍ${C.reset} — civilizace č. ${world.run} na planetě ${world.planet.name}`);
   printSummary(world, events);
 }

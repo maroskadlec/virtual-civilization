@@ -15,9 +15,6 @@ import type { DisasterDef } from './disasters.js';
 import { biomeAt } from './planet.js';
 import { factionName, placeName } from './names.js';
 import {
-  createWorld,
-  nextRun,
-  summarizeRun,
   languageOf,
   recomputeDerived,
   reliefFor,
@@ -32,7 +29,6 @@ import type {
   EndingKind,
   Faction,
   PressureId,
-  RunSummary,
   Settlement,
   TickResult,
   World,
@@ -55,7 +51,7 @@ function event(
   text: string,
   data: Record<string, unknown> = {},
 ): WorldEvent {
-  return { tick: world.tick, year: world.year, kind, weight, text, data };
+  return { run: world.run, tick: world.tick, year: world.year, kind, weight, text, data };
 }
 
 // ─────────────────────────────────────────── Klima
@@ -877,35 +873,6 @@ export function tickWorld(prev: World): TickResult {
   return { world, events };
 }
 
-/**
- * Odsimuluje N ticků napříč po sobě jdoucími civilizacemi.
- *
- * Když jedna zanikne, na nové planetě začíná další — takhle bude web běžet
- * doopravdy. Celá posloupnost zůstává čistou funkcí prvního seedu.
- */
-export function simulateCampaign(
-  startSeed: number,
-  ticks: number,
-): { world: World; events: WorldEvent[]; archive: RunSummary[] } {
-  let world = createWorld(startSeed);
-  const events: WorldEvent[] = [genesisEvent(world)];
-  const archive: RunSummary[] = [];
-
-  for (let i = 0; i < ticks; i++) {
-    if (world.ending) {
-      archive.push(summarizeRun(world));
-      world = nextRun(world);
-      events.push(genesisEvent(world));
-      continue;
-    }
-    const res = tickWorld(world);
-    world = res.world;
-    events.push(...res.events);
-  }
-
-  return { world, events, archive };
-}
-
 /** Odsimuluje N ticků a vrátí celou kroniku. */
 export function simulate(
   start: World,
@@ -927,6 +894,7 @@ export function genesisEvent(world: World): WorldEvent {
   const first = world.settlements[0];
   const faction = world.factions[0];
   return {
+    run: world.run,
     tick: 0,
     year: 0,
     kind: 'genesis',

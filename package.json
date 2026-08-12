@@ -11,7 +11,11 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "calibrate": "tsx tools/calibrate.ts"
+    "calibrate": "tsx tools/calibrate.ts",
+    "sim": "tsx tools/sim-runner.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -20,6 +24,7 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.1",
+    "vite": "^5.4.21",
     "vitest": "^2.1.8"
   }
 }

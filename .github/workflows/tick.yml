@@ -1,0 +1,85 @@
+# Posune civilizaci a nasadí web.
+#
+# Jeden workflow schválně dělá obojí. Kdyby to byly dva, mohl by nastat stav,
+# kdy jsou v repu čerstvá data, ale nasazený web je starší — a divák by viděl
+# minulost. Takhle se checkpoint a stránka nasazují vždy společně.
+#
+# Simulace na tomhle běhu ale nestojí. Zdrojem pravdy je genesis timestamp
+# a seed; runner jen předpočítává to, co si klient umí dopočítat sám.
+# Když workflow týden neběží, web ukazuje správný stav dál — jen si prohlížeč
+# spočítá o pár set ticků víc.
+#
+# POZOR: GitHub vypíná naplánované workflow po 60 dnech neaktivity repozitáře
+# a commity pod GITHUB_TOKEN se do aktivity nepočítají. Když to má běžet
+# dlouhodobě bez zásahu, vyměň `token` níž za PAT uložený v secrets.
+
+name: tick
+
+on:
+  schedule:
+    # Tick je 15 minut, běháme po půlhodině a dopočítáváme po dvou.
+    # Plánované běhy GitHub beztak zpožďuje a na výsledku to nic nemění.
+    - cron: '*/30 * * * *'
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'data/**'
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Dva souběžné běhy by si přepsaly checkpoint. Nový počká, běžící doběhne.
+concurrency:
+  group: tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Posunout civilizaci na aktuální čas
+        run: npm run sim
+
+      - name: Commitnout kroniku
+        run: |
+          if git diff --quiet -- data && git diff --cached --quiet -- data; then
+            echo "Žádná nová data."
+            exit 0
+          fi
+          # Zpráva commitu nese skutečnou dějinnou událost — git log je kronika.
+          MESSAGE=$(node -e "process.stdout.write(require('./data/status.json').headline)")
+          git config user.name 'kronikář'
+          git config user.email 'kronikar@users.noreply.github.com'
+          git add data
+          git commit -m "$MESSAGE"
+          git pull --rebase --autostash origin main
+          git push origin main
+
+      - name: Sestavit web
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -18,5 +18,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["engine", "view", "tools", "tests"]
+  "include": ["engine", "web", "tools", "tests"]
 }

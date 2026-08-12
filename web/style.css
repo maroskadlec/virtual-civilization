@@ -1,0 +1,282 @@
+/*
+ * Art direction: dějepisná kniha potkává vědecký přístroj.
+ *
+ * Próza kroniky je patková a teplá jako inkoust na papíře, všechna čísla
+ * a popisky jsou neproporcionální a chladné jako displej měřáku. Ten kontrast
+ * je celý ten styl. Podklad je téměř černý, linky vlasové, žádné gradienty
+ * ani stíny, hodně negativního prostoru.
+ *
+ * Písma jsou systémová — žádný požadavek na síť, takže stránka naběhne
+ * okamžitě a funguje i offline.
+ */
+
+:root {
+  --ground: #07090c;
+  --ground-raised: #0d1116;
+  --rule: #1c222b;
+  --ink: #e8dcc4;
+  --ink-dim: #9aa1ab;
+  --ink-faint: #5c646f;
+
+  --milestone: #7fd6a6;
+  --disaster: #d9a04a;
+  --war: #d2624a;
+  --epoch: #8fb4de;
+  --loss: #b8574e;
+  --faction: #b48fd6;
+
+  --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  --measure: 62ch;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--ground);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--ink-dim);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+a:hover {
+  color: var(--ink);
+}
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px 96px;
+}
+
+/* ─────────────────────────────── Hlavička */
+
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: end;
+  padding: 72px 0 28px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead-title h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(38px, 7vw, 68px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 14px 0 0;
+  max-width: var(--measure);
+  color: var(--ink-dim);
+  font-size: 16px;
+}
+
+/* Přístrojová deska — všechno v monu, zarovnané, bez ozdob. */
+.instruments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  gap: 2px 34px;
+  margin: 0;
+  font-family: var(--mono);
+  text-align: right;
+}
+
+.instruments div {
+  display: contents;
+}
+
+.instruments dt {
+  color: var(--ink-faint);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: left;
+  align-self: center;
+}
+
+.instruments dd {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────── Kronika */
+
+.chronicle {
+  padding-top: 8px;
+}
+
+.loading {
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding-top: 48px;
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: 148px 18px minmax(0, 1fr);
+  gap: 0 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry-when {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  padding-top: 6px;
+  white-space: nowrap;
+}
+
+.entry-mark {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding-top: 4px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.entry-text {
+  max-width: var(--measure);
+  margin: 0;
+}
+
+/* Barva nese druh události. Text zůstává inkoustový, svítí jen značka. */
+.kind-milestone .entry-mark { color: var(--milestone); }
+.kind-milestone_lost .entry-mark { color: var(--loss); }
+.kind-disaster .entry-mark,
+.kind-disaster_aggregate .entry-mark { color: var(--disaster); }
+.kind-war .entry-mark { color: var(--war); }
+.kind-faction_split .entry-mark,
+.kind-faction_end .entry-mark { color: var(--faction); }
+.kind-climate .entry-mark { color: var(--epoch); }
+
+.kind-disaster_aggregate .entry-text,
+.kind-settlement_founded .entry-text,
+.kind-settlement_lost .entry-text {
+  color: var(--ink-dim);
+}
+
+/* Zlom epochy a zrození civilizace nejsou položky seznamu, ale předěly. */
+.entry.kind-epoch,
+.entry.kind-genesis,
+.entry.kind-ending {
+  grid-template-columns: 148px minmax(0, 1fr);
+  padding: 30px 0 22px;
+}
+
+.entry.kind-epoch .entry-mark,
+.entry.kind-genesis .entry-mark,
+.entry.kind-ending .entry-mark {
+  display: none;
+}
+
+.entry.kind-epoch .entry-text,
+.entry.kind-genesis .entry-text,
+.entry.kind-ending .entry-text {
+  font-size: 25px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.entry.kind-epoch .entry-text { color: var(--epoch); }
+.entry.kind-ending .entry-text { color: var(--war); }
+
+/* Značka místa, kde divák naposledy skončil. */
+.resume {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 26px 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.resume::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.colophon {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  max-width: var(--measure);
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+.colophon p {
+  margin: 0 0 10px;
+}
+
+/* ─────────────────────────────── Úzké displeje */
+
+@media (max-width: 760px) {
+  .shell {
+    padding: 0 18px 64px;
+  }
+
+  .masthead {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    align-items: start;
+    padding-top: 44px;
+  }
+
+  .instruments {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 20px;
+    text-align: left;
+  }
+
+  .entry,
+  .entry.kind-epoch,
+  .entry.kind-genesis,
+  .entry.kind-ending {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .entry-mark {
+    display: none;
+  }
+
+  .entry.kind-epoch .entry-text,
+  .entry.kind-genesis .entry-text,
+  .entry.kind-ending .entry-text {
+    font-size: 21px;
+  }
+}
