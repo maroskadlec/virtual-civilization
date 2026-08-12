@@ -8,6 +8,10 @@ je čistá funkce `(seed, tick)`, kde `tick = (teď − genesis) / 15 minut`. Kd
 na web, dopočítá si aktuální stav sám a uvidí přesně tutéž civilizaci jako všichni
 ostatní.
 
+Determinismus platí pro danou verzi enginu. Když se změní pravidla, přepočet
+od nuly dá jinou historii — nositelem dějin proto není seed, ale commitnutý
+checkpoint. Od něj se pokračuje novými pravidly, aniž by se přepisovala minulost.
+
 Inspirací byl [michalstrnadel/lili-octopus](https://github.com/michalstrnadel/lili-octopus).
 
 ## Stav

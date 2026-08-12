@@ -105,14 +105,28 @@ function checkIceAge(world: World, events: WorldEvent[]): void {
   // dostane nízkou váhu, aby nepřehlušila to, co se civilizace právě naučila.
   const weight = world.epoch === 0 ? 0.5 : 0.9;
 
-  events.push(
-    wants
-      ? event(world, 'climate', weight, 'Zima přestala končit. Ledovce se daly do pohybu k jihu.', { onset: true })
-      : event(world, 'climate', weight, 'Led ustoupil. Pod ním se objevila země, kterou nikdo nepamatoval.', {
-          onset: false,
-        }),
-  );
+  // Glaciálů projde v paleolitu desítky. Jedna věta na oba směry by z kroniky
+  // udělala kopírák, takže se střídá několik znění.
+  const rng = rngFor(world.seed, world.tick, STREAM.flavor, 5);
+  const text = wants ? rng.pick(ICE_AGE_ONSET) : rng.pick(ICE_AGE_END);
+  events.push(event(world, 'climate', weight, text, { onset: wants }));
 }
+
+const ICE_AGE_ONSET: readonly string[] = [
+  'Zima přestala končit. Ledovce se daly do pohybu k jihu.',
+  'Léto nepřišlo. Pak nepřišlo ani další a nikdo už je nepočítal.',
+  'Moře ustoupilo od břehů a mezi pevninami se otevřely suché mosty.',
+  'Stáda odešla na jih a lidé za nimi. Kdo zůstal, nezůstal dlouho.',
+  'Sníh v horách přestal tát a rok co rok ho přibývalo.',
+];
+
+const ICE_AGE_END: readonly string[] = [
+  'Led ustoupil. Pod ním se objevila země, kterou nikdo nepamatoval.',
+  'Ledovce se rozpadly a řeky odnesly, co po nich zbylo.',
+  'Hladina stoupla a pobřežní tábořiště zmizela pod vodou.',
+  'Zima se zase začala chovat jako zima. Lesy se vrátily na sever.',
+  'Tající vody vyryly do krajiny rýhy, které tam zůstaly navždy.',
+];
 
 // ─────────────────────────────────────────── Populace
 
@@ -899,7 +913,10 @@ export function genesisEvent(world: World): WorldEvent {
     year: 0,
     kind: 'genesis',
     weight: 1,
-    text: `Na planetě ${world.planet.name} se v jeskyni u ${first?.name ?? 'bezejmenného místa'} probudilo ${Math.round(world.stats.population)} lidí. Říkali si ${faction?.name.nom ?? 'nijak'}. Neuměli nic.`,
+    text:
+      (world.run > 1 ? `${world.run}. civilizace. ` : '') +
+      `Na planetě ${world.planet.name} se v jeskyni u ${first?.name ?? 'bezejmenného místa'} probudilo ${Math.round(world.stats.population)} lidí. ` +
+      `Říkali si ${faction?.name.nom ?? 'nijak'}. Neuměli nic.`,
     data: { planet: world.planet.name, population: world.stats.population },
   };
 }

@@ -10,6 +10,12 @@
  * Z toho plyne celá architektura nasazení: server nic „neběží", jen dopočítává,
  * a klient dokáže dopočítat totéž z libovolného checkpointu. Když server týden
  * vypadne, klient si prostě spočítá o 672 ticků víc a nikdo si toho nevšimne.
+ *
+ * Jedno omezení je ale potřeba říct nahlas: determinismus platí PRO DANOU VERZI
+ * ENGINE. Když se změní pravidla, přepočet od nuly dá jinou historii než tu,
+ * která je zapsaná v kronice. Nositelem dějin proto není seed, ale commitnutý
+ * checkpoint — od něj se pokračuje novými pravidly, stejně jako se ve světě
+ * mění zákony, aniž by se přepisovala minulost.
  */
 
 import { TICK_REAL_MS, tickIndexAt } from './epochs.js';
