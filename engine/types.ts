@@ -190,6 +190,7 @@ export type EventKind =
   | 'disaster_aggregate'
   | 'epoch'
   | 'faction_split'
+  | 'faction_end'
   | 'war'
   | 'settlement_founded'
   | 'settlement_lost'

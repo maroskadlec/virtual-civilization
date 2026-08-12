@@ -44,6 +44,7 @@ const KIND_STYLE: Record<string, { color: string; mark: string }> = {
   disaster_aggregate: { color: C.dim, mark: '▵' },
   epoch: { color: C.cyan + C.bold, mark: '■' },
   faction_split: { color: C.magenta, mark: '⑂' },
+  faction_end: { color: C.magenta, mark: '†' },
   war: { color: C.red, mark: '⚔' },
   settlement_founded: { color: C.dim, mark: '·' },
   settlement_lost: { color: C.dim, mark: '×' },

@@ -459,8 +459,13 @@ function driftRivalry(world: World, years: number): void {
     for (const other of world.factions) {
       if (other.id === f.id) continue;
       const current = f.rivalry[other.id] ?? 0.15;
-      // Tlačenice rivalitu živí, obchod ji tlumí.
-      const pull = world.pressures.crowding * 0.4 + f.culture.aggression * 0.3 - f.culture.mercantile * 0.25;
+      // Tlačenice rivalitu živí, obchod ji tlumí. Původní váhy nedokázaly
+      // překlopit rivalitu přes válečný práh ani jednou za 3000 ticků —
+      // frakce se rozcházely, ale nikdy se nepobily.
+      const pull =
+        world.pressures.crowding * 0.55 +
+        f.culture.aggression * 0.5 -
+        f.culture.mercantile * 0.2;
       const rate = Math.min(0.4, years * 0.004);
       f.rivalry[other.id] = clamp01(current + (pull - current) * rate + rng.gauss(0, 0.01));
     }
@@ -475,8 +480,8 @@ function maybeWar(world: World, events: WorldEvent[]): void {
     for (const b of world.factions) {
       if (a.id >= b.id) continue; // každou dvojici jen jednou, stabilně podle id
       const rivalry = Math.max(a.rivalry[b.id] ?? 0, b.rivalry[a.id] ?? 0);
-      if (rivalry < 0.62) continue;
-      if (!rng.chance(0.05 * rivalry)) continue;
+      if (rivalry < 0.5) continue;
+      if (!rng.chance(0.06 * rivalry)) continue;
 
       const aSet = world.settlements.filter((s) => s.factionId === a.id);
       const bSet = world.settlements.filter((s) => s.factionId === b.id);
@@ -514,7 +519,13 @@ function maybeWar(world: World, events: WorldEvent[]): void {
   // Frakce, které přišly o všechny osady, mizí.
   const alive = new Set(world.settlements.map((s) => s.factionId));
   for (const f of world.factions.filter((x) => !alive.has(x.id))) {
-    events.push(event(world, 'war', 0.7, `${f.name.nom} přestali existovat jako společenství.`, { faction: f.id }));
+    // Vlastní druh události: frakce může vymřít i bez války, když jí poslední
+    // osadu vezme mor nebo sopka. Označovat to mečem bylo zavádějící.
+    events.push(
+      event(world, 'faction_end', 0.7, `${f.name.nom} přestali existovat jako společenství.`, {
+        faction: f.id,
+      }),
+    );
   }
   world.factions = world.factions.filter((f) => alive.has(f.id) || world.factions.length === 1);
 }
