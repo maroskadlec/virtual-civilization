@@ -132,6 +132,29 @@ export const BIOME_YIELD: Record<Biome, number> = {
   highland: 0.6,
 };
 
+/** Předložkové tvary pro kroniku — čeština si u každého biomu žádá jiný pád. */
+export const BIOME_IN: Record<Biome, string> = {
+  tundra: 'v tundře',
+  taiga: 'v tajze',
+  grassland: 've stepi',
+  forest: 'v lese',
+  jungle: 'v pralese',
+  desert: 'v poušti',
+  coast: 'na pobřeží',
+  highland: 'na vysočině',
+};
+
+export const BIOME_FROM: Record<Biome, string> = {
+  tundra: 'tundru',
+  taiga: 'tajgu',
+  grassland: 'step',
+  forest: 'les',
+  jungle: 'prales',
+  desert: 'poušť',
+  coast: 'pobřeží',
+  highland: 'vysočinu',
+};
+
 export const BIOME_LABEL: Record<Biome, string> = {
   tundra: 'tundra',
   taiga: 'tajga',

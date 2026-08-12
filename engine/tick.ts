@@ -12,7 +12,7 @@ import { MAX_CONTENT_EPOCH, MILESTONE_BY_ID, milestonesOfEpoch } from './milesto
 import { applyResearch, computeAccess, reachableIds, shouldAdvanceEpoch } from './research.js';
 import { DISASTERS, rollDisasters } from './disasters.js';
 import type { DisasterDef } from './disasters.js';
-import { biomeAt } from './planet.js';
+import { BIOME_FROM, BIOME_IN, BIOME_YIELD, biomeAt, randomPosition } from './planet.js';
 import { factionName, placeName } from './names.js';
 import {
   languageOf,
@@ -391,6 +391,61 @@ function doResearch(world: World, years: number, events: WorldEvent[]): boolean 
 function maxSettlements(world: World): number {
   const fromTech = Math.log2(Math.max(1, world.stats.capacityMul)) * 1.6;
   return Math.min(SETTLEMENT_HARD_CAP, Math.round(1 + world.epoch * 3 + fromTech));
+}
+
+/**
+ * Stěhování tlupy.
+ *
+ * Kdo se probudí na špatném místě, se v původní podobě neměl jak vzmoci:
+ * založení další osady vyžaduje šedesát lidí a v poušti na suchém světě se
+ * jich tolik nikdy nesejde. Takový svět byl mrtvý hned první den, aniž by se
+ * stalo cokoli zajímavého. Skuteční lovci a sběrači se ale sebrali a šli jinam.
+ *
+ * Týká se to jen osamělé a neprosperující tlupy — usedlá civilizace s poli
+ * a sýpkami se nestěhuje.
+ */
+function maybeMigrate(world: World, events: WorldEvent[]): void {
+  if (world.settlements.length !== 1) return;
+  const home = world.settlements[0];
+  if (!home || settlementCapacity(world, home) > 60) return;
+
+  const rng = rngFor(world.seed, world.tick, STREAM.settlement, 17);
+  if (!rng.chance(0.3)) return;
+
+  // Rozhlédnou se po několika směrech a vyberou nejúživnější.
+  let best: { r: number; theta: number; biome: Settlement['biome'] } | null = null;
+  let bestYield = BIOME_YIELD[home.biome];
+
+  for (let i = 0; i < 6; i++) {
+    const pos = randomPosition(rng);
+    const biome = biomeAt(
+      world.planet,
+      pos.r,
+      pos.theta,
+      world.climate.temperature,
+      world.climate.aridity,
+    );
+    if (BIOME_YIELD[biome] > bestYield) {
+      best = { r: pos.r, theta: pos.theta, biome };
+      bestYield = BIOME_YIELD[biome];
+    }
+  }
+  if (!best) return;
+
+  const leaving = BIOME_FROM[home.biome];
+  home.r = best.r;
+  home.theta = best.theta;
+  home.biome = best.biome;
+
+  events.push(
+    event(
+      world,
+      'settlement_founded',
+      0.8,
+      `Tlupa opustila ${leaving} a vydala se hledat lepší krajinu. Usadila se ${BIOME_IN[best.biome]}.`,
+      { settlement: home.name, biome: best.biome, migration: true },
+    ),
+  );
 }
 
 function maybeFoundSettlement(world: World, events: WorldEvent[]): void {
@@ -872,6 +927,7 @@ export function tickWorld(prev: World): TickResult {
   updatePressures(world, years);
   doResearch(world, years, events);
 
+  maybeMigrate(world, events);
   maybeFoundSettlement(world, events);
   driftRivalry(world, years);
   maybeSplitFaction(world, events);
