@@ -10,12 +10,12 @@
  */
 
 import { createWorld } from '../engine/world.js';
-import { genesisEvent, researchOutput, simulate, tickWorld } from '../engine/tick.js';
+import { genesisEvent, researchOutput, simulate, simulateCampaign, tickWorld } from '../engine/tick.js';
 import { epochDef, formatYear, yearsPerTick } from '../engine/epochs.js';
 import { planetNotes, BIOME_LABEL } from '../engine/planet.js';
 import { EPOCH_COST_SCALE, MILESTONES, MAX_CONTENT_EPOCH } from '../engine/milestones.data.js';
 import { reachableIds } from '../engine/research.js';
-import type { World, WorldEvent } from '../engine/types.js';
+import type { RunSummary, World, WorldEvent } from '../engine/types.js';
 
 const C = {
   reset: '\x1b[0m',
@@ -279,6 +279,53 @@ function runSweep(count: number, ticks: number): void {
   console.log(`\n${C.dim}medián populace na konci: ${Math.round(medianPop).toLocaleString('cs-CZ')}${C.reset}\n`);
 }
 
+const ENDING_LABEL: Record<string, string> = {
+  extinction: 'vyhynutí',
+  stagnation: 'stagnace',
+  self_destruction: 'sebezničení',
+  transcendence: 'transcendence',
+};
+
+const CAUSE_LABEL: Record<string, string> = {
+  collapse: 'rozpad',
+  quiet: 'dlouhé ticho',
+  nuclear_war: 'jaderná válka',
+  grey_goo: 'sebereplikace bez dozoru',
+  climate_collapse: 'klimatický rozvrat',
+  ascension: 'odchod',
+};
+
+function printArchive(archive: RunSummary[]): void {
+  if (archive.length === 0) return;
+  console.log(`\n${C.bold}ARCHIV ZANIKLÝCH CIVILIZACÍ${C.reset}`);
+  for (const r of archive) {
+    console.log(
+      `  ${String(r.run).padStart(2)}. ${r.planet.padEnd(12)} ${C.dim}${epochDef(r.epoch).name.padEnd(22)}${C.reset} ` +
+        `${(ENDING_LABEL[r.ending] ?? r.ending).padEnd(14)} ${C.dim}${CAUSE_LABEL[r.cause] ?? r.cause}${C.reset}`,
+    );
+    console.log(
+      `${C.dim}      ${r.ticks} ticků · ${Math.round(r.years).toLocaleString('cs-CZ')} let · vrchol ${Math.round(r.peakPopulation).toLocaleString('cs-CZ')} obyvatel · ` +
+        `${r.milestonesUnlocked} milníků (${r.milestonesLost} ztraceno) · ${r.factionsEver} frakcí${C.reset}`,
+    );
+    const lineage =
+      r.firstFaction === r.lastFaction
+        ? `zakladatelé ${r.firstFaction} vydrželi až do konce`
+        : `od ${r.firstFaction} k ${r.lastFaction}`;
+    console.log(`${C.dim}      ${lineage}${C.reset}`);
+  }
+}
+
+/** Posloupnost civilizací — tak, jak web poběží doopravdy. */
+function runCampaign(seed: number, ticks: number, minWeight: number): void {
+  const { world, events, archive } = simulateCampaign(seed, ticks);
+  for (const e of events) {
+    if (e.weight >= minWeight) printEvent(e, world.foundingYear);
+  }
+  printArchive(archive);
+  console.log(`\n${C.bold}PRÁVĚ BĚŽÍ${C.reset} — civilizace č. ${world.run} na planetě ${world.planet.name}`);
+  printSummary(world, events);
+}
+
 // ─────────────────────────────────────────── main
 
 const sweepIndex = process.argv.indexOf('--sweep');
@@ -287,6 +334,8 @@ const ticks = arg('ticks', 5000);
 if (sweepIndex >= 0) {
   const raw = Number(process.argv[sweepIndex + 1]);
   runSweep(Number.isFinite(raw) && raw > 0 ? raw : 100, ticks);
+} else if (process.argv.includes('--campaign')) {
+  runCampaign(arg('seed', 1), ticks, arg('min-weight', 0.9));
 } else {
   runOne(arg('seed', 1), ticks, arg('min-weight', 0));
 }

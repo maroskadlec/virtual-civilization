@@ -231,6 +231,11 @@ export interface Climate {
   aridity: number;
   seaLevel: number;
   iceCoverage: number;
+  /**
+   * Oteplení způsobené vlastním průmyslem, ve stupních. Načítá se, dokud
+   * civilizace pálí a nemá čím to nahradit — a přičítá se k přirozené teplotě.
+   */
+  industrialWarming: number;
   /** Probíhá doba ledová? Drží se se setrvačností, aby stav nekmital. */
   iceAge: boolean;
   /** Tick posledního klimatického zvratu — brání spamu v hlubokém čase. */
@@ -242,14 +247,49 @@ export interface TechState {
   unlocked: Record<string, { tick: number; year: number }>;
   /** id → nasbírané poznání. */
   progress: Record<string, number>;
-  /** Milníky ztracené při kolapsu. */
+  /** Milníky ztracené při kolapsu a dosud neobjevené znovu. */
   lost: string[];
+  /**
+   * Kolik znalostí se za celou historii ztratilo — včetně těch, které se
+   * pak podařilo objevit znovu. `lost` samo je momentka, ne dějiny.
+   */
+  everLost: number;
 }
 
 export type EndingKind = 'extinction' | 'stagnation' | 'self_destruction' | 'transcendence';
 
+/** Jak přesně to skončilo — pro archiv a pro kroniku. */
+export type EndingCause =
+  | 'collapse'
+  | 'quiet'
+  | 'nuclear_war'
+  | 'grey_goo'
+  | 'climate_collapse'
+  | 'ascension';
+
+/** Zápis o zaniklé civilizaci. Zůstane v archivu, až ji vystřídá další. */
+export interface RunSummary {
+  run: number;
+  seed: number;
+  planet: string;
+  ending: EndingKind;
+  cause: EndingCause;
+  ticks: number;
+  years: number;
+  epoch: number;
+  peakPopulation: number;
+  milestonesUnlocked: number;
+  /** Kolik znalostí civilizace za celou historii ztratila, i když je pak dohnala. */
+  milestonesLost: number;
+  factionsEver: number;
+  firstFaction: string;
+  lastFaction: string;
+}
+
 export interface World {
   seed: number;
+  /** Pořadí civilizace. Když jedna zanikne, na nové planetě začíná další. */
+  run: number;
   tick: number;
   /** Uplynulé simulované roky od genesis. */
   year: number;
@@ -285,7 +325,11 @@ export interface World {
   idleTicks: number;
   /** Kolik ticků po sobě je civilizace na hraně přežití. Brání ukvapenému vyhynutí. */
   brinkTicks: number;
-  ending: { kind: EndingKind; tick: number; year: number } | null;
+  ending: { kind: EndingKind; cause: EndingCause; tick: number; year: number } | null;
+  /** Nejvyšší dosažená populace — pro archiv. */
+  peakPopulation: number;
+  /** Jméno zakládající frakce. Může zaniknout, ale do archivu patří. */
+  firstFactionName: string;
   /** Počítadla pro generování stabilních ID. */
   nextIds: { faction: number; settlement: number };
 }

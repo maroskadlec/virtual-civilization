@@ -1,3 +1,3 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`determinismus > golden hash se nemění mezi běhy 1`] = `3013306135`;
+exports[`determinismus > golden hash se nemění mezi běhy 1`] = `934929337`;

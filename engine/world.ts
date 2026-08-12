@@ -12,7 +12,8 @@ import { factionName, makeLanguage, placeName } from './names.js';
 import type { Language } from './names.js';
 import { MILESTONE_BY_ID } from './milestones.data.js';
 import { computeAccess } from './research.js';
-import type { Culture, Faction, Settlement, World } from './types.js';
+import { hashSeed } from './rng.js';
+import type { Culture, Faction, RunSummary, Settlement, World } from './types.js';
 
 export const GENESIS_POPULATION = 35;
 
@@ -31,7 +32,7 @@ function randomCulture(rng: { next: () => number }): Culture {
   };
 }
 
-export function createWorld(seed: number): World {
+export function createWorld(seed: number, run = 1): World {
   const planet = generatePlanet(seed);
   const rng = rngFor(seed, 0, STREAM.factions);
 
@@ -51,6 +52,7 @@ export function createWorld(seed: number): World {
     aridity: 0.35,
     seaLevel: 0,
     iceCoverage: 0.1,
+    industrialWarming: 0,
     iceAge: false,
     lastShiftTick: 0,
   };
@@ -73,6 +75,7 @@ export function createWorld(seed: number): World {
 
   const world: World = {
     seed,
+    run,
     tick: 0,
     year: 0,
     foundingYear: null,
@@ -81,7 +84,7 @@ export function createWorld(seed: number): World {
     climate,
     factions: [faction],
     settlements: [settlement],
-    tech: { unlocked: {}, progress: {}, lost: [] },
+    tech: { unlocked: {}, progress: {}, lost: [], everLost: 0 },
     pressures: {
       cold: 0.4,
       hunger: 0.5,
@@ -102,6 +105,8 @@ export function createWorld(seed: number): World {
     idleTicks: 0,
     brinkTicks: 0,
     ending: null,
+    peakPopulation: GENESIS_POPULATION,
+    firstFactionName: faction.name.nom,
     nextIds: { faction: 1, settlement: 1 },
   };
 
@@ -151,11 +156,26 @@ export function reliefFor(world: World, pressure: keyof World['pressures']): num
  * Klesající výnosy z technologií.
  *
  * Násobiče kapacity se v datech milníků násobí, což je autorsky pohodlné,
- * ale surový součin roste přes několik řádů rychleji, než je únosné —
- * v době železné vycházela populace v milionech tam, kde měly být statisíce.
- * Jeden exponent to srovná, aniž by bylo nutné přeladit sto milníků.
+ * ale surový součin roste přes několik řádů rychleji, než je únosné.
+ *
+ * Zlom je tam schválně. Jediný exponent by musel být kompromisem mezi ranými
+ * a pozdními epochami: mírný nechal populaci vyšplhat na tři biliony,
+ * ostrý zase nechal vymřít skoro každou civilizaci ještě v neolitu, protože
+ * první osady nedokázaly uživit ani vlastní objevování. Nad zlomem — zhruba
+ * od konce doby železné — výnosy klesají prudčeji, což ranou hru nechá být
+ * a pozdní srovná do řádu miliard.
  */
+const CAPACITY_KNEE = 800;
 const CAPACITY_SOFTENING = 0.72;
+const CAPACITY_SOFTENING_LATE = 0.5;
+
+function softenCapacity(raw: number): number {
+  if (raw <= CAPACITY_KNEE) return Math.pow(raw, CAPACITY_SOFTENING);
+  return (
+    Math.pow(CAPACITY_KNEE, CAPACITY_SOFTENING) *
+    Math.pow(raw / CAPACITY_KNEE, CAPACITY_SOFTENING_LATE)
+  );
+}
 
 /** Únosná kapacita jedné osady při současném klimatu a technologiích. */
 export function settlementCapacity(world: World, s: Settlement): number {
@@ -166,7 +186,7 @@ export function settlementCapacity(world: World, s: Settlement): number {
   return (
     baseCapacity(world.planet) *
     BIOME_YIELD[s.biome] *
-    Math.pow(world.stats.capacityMul, CAPACITY_SOFTENING) *
+    softenCapacity(world.stats.capacityMul) *
     climatePenalty
   );
 }
@@ -182,4 +202,50 @@ export function usedSettlementNames(world: World): Set<string> {
 
 export function usedFactionNames(world: World): Set<string> {
   return new Set(world.factions.map((f) => f.name.nom));
+}
+
+// ─────────────────────────────────────────── Nástupnictví běhů
+
+/**
+ * Když civilizace zanikne, začne na jiné planetě další.
+ *
+ * Seed nové se odvozuje z té staré, takže celá posloupnost civilizací je
+ * pořád čistou funkcí prvního seedu — archiv se dá kdykoli přepočítat
+ * od začátku a vyjde stejně.
+ */
+export function nextRun(world: World): World {
+  return createWorld(hashSeed(world.seed, world.run, 0x5eed0), world.run + 1);
+}
+
+/** Zápis o zaniklé civilizaci pro archiv. */
+export function summarizeRun(world: World): RunSummary {
+  const biggest = world.factions
+    .slice()
+    .sort((a, b) => (a.id < b.id ? -1 : 1))
+    .reduce<{ name: string; pop: number }>(
+      (best, f) => {
+        const pop = world.settlements
+          .filter((s) => s.factionId === f.id)
+          .reduce((sum, s) => sum + s.population, 0);
+        return pop > best.pop ? { name: f.name.nom, pop } : best;
+      },
+      { name: world.firstFactionName, pop: -1 },
+    );
+
+  return {
+    run: world.run,
+    seed: world.seed,
+    planet: world.planet.name,
+    ending: world.ending?.kind ?? 'stagnation',
+    cause: world.ending?.cause ?? 'quiet',
+    ticks: world.tick,
+    years: world.foundingYear === null ? world.year : world.year - world.foundingYear,
+    epoch: world.epoch,
+    peakPopulation: world.peakPopulation,
+    milestonesUnlocked: Object.keys(world.tech.unlocked).length,
+    milestonesLost: world.tech.everLost,
+    factionsEver: world.nextIds.faction,
+    firstFaction: world.firstFactionName,
+    lastFaction: biggest.name,
+  };
 }

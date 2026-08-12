@@ -4,7 +4,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { MILESTONES, MILESTONE_BY_ID, EPOCH_COST_SCALE, milestonesOfEpoch } from '../engine/milestones.data.js';
+import {
+  MILESTONES,
+  MILESTONE_BY_ID,
+  EPOCH_COST_SCALE,
+  MAX_CONTENT_EPOCH,
+  milestonesOfEpoch,
+} from '../engine/milestones.data.js';
 import { EPOCHS, epochDef } from '../engine/epochs.js';
 import { createWorld } from '../engine/world.js';
 import { reachableIds } from '../engine/research.js';
@@ -79,17 +85,39 @@ describe('planety nevytvářejí slepé uličky', () => {
     }
   });
 
-  it('na každé planetě jde naplnit kvótu pro postup z epochy 0 a 1', () => {
-    for (let seed = 1; seed <= 300; seed++) {
-      const world = createWorld(seed);
-      const reachable = reachableIds(world);
-      for (const e of [0, 1]) {
+  it('drtivá většina planet umožňuje projít všemi epochami', () => {
+    // Naprostá blokace se toleruje jen výjimečně — svět úplně bez kovů je
+    // legitimní osud a má skončit stagnací, ne rozbitou simulací. Kdyby ale
+    // podíl vyskočil, znamená to, že nějaká větev stromu ztratila alternativu.
+    const SAMPLES = 300;
+    const blocked = new Map<number, number>();
+
+    for (let seed = 1; seed <= SAMPLES; seed++) {
+      const reachable = reachableIds(createWorld(seed));
+      for (let e = 0; e <= MAX_CONTENT_EPOCH; e++) {
         const all = milestonesOfEpoch(e);
         const ok = all.filter((m) => reachable.has(m.id)).length;
-        expect(ok / all.length, `seed ${seed}, epocha ${e}`).toBeGreaterThanOrEqual(
-          epochDef(e).advanceRatio,
-        );
+        if (ok / all.length < epochDef(e).advanceRatio) {
+          blocked.set(e, (blocked.get(e) ?? 0) + 1);
+        }
       }
+    }
+
+    for (let e = 0; e <= MAX_CONTENT_EPOCH; e++) {
+      const ratio = (blocked.get(e) ?? 0) / SAMPLES;
+      expect(ratio, `epocha ${e} (${epochDef(e).name})`).toBeLessThan(0.05);
+    }
+  });
+
+  it('každá epocha po neolitu má alespoň dvě nezávislé vstupní větve', () => {
+    // Pojistka proti tomu, aby celá epocha visela na jediném milníku —
+    // přesně tak kdysi chybějící železo uzavřelo celý průmyslový strom.
+    for (let e = 2; e <= MAX_CONTENT_EPOCH; e++) {
+      const entries = milestonesOfEpoch(e).filter((m) => {
+        const deps = [...(m.requires?.all ?? []), ...(m.requires?.any ?? [])];
+        return deps.length === 0 || deps.some((id) => (MILESTONE_BY_ID.get(id)?.epoch ?? 0) < e);
+      });
+      expect(entries.length, `epocha ${e} (${epochDef(e).name})`).toBeGreaterThanOrEqual(2);
     }
   });
 

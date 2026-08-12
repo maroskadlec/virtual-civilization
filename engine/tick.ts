@@ -15,6 +15,9 @@ import type { DisasterDef } from './disasters.js';
 import { biomeAt } from './planet.js';
 import { factionName, placeName } from './names.js';
 import {
+  createWorld,
+  nextRun,
+  summarizeRun,
   languageOf,
   recomputeDerived,
   reliefFor,
@@ -23,7 +26,18 @@ import {
   usedFactionNames,
   usedSettlementNames,
 } from './world.js';
-import type { Declined, Faction, PressureId, Settlement, TickResult, World, WorldEvent } from './types.js';
+import type {
+  Declined,
+  EndingCause,
+  EndingKind,
+  Faction,
+  PressureId,
+  RunSummary,
+  Settlement,
+  TickResult,
+  World,
+  WorldEvent,
+} from './types.js';
 import { PRESSURE_IDS } from './types.js';
 
 /** Převod populace a vzdělanosti na jednotky poznání za rok. */
@@ -61,7 +75,7 @@ export function temperatureAt(world: World, year: number): number {
 }
 
 function updateClimate(world: World): void {
-  const t = temperatureAt(world, world.year);
+  const t = temperatureAt(world, world.year) + world.climate.industrialWarming;
   world.climate.temperature = t;
   world.climate.iceCoverage = clamp01(0.1 - t * 0.09);
   world.climate.aridity = clamp01(0.35 + t * 0.035 - world.planet.hydrology * 0.25);
@@ -198,7 +212,11 @@ function applyDisasters(world: World, years: number, events: WorldEvent[]): void
 }
 
 function applyToll(world: World, def: DisasterDef, target: Settlement, severity: number, rng: ReturnType<typeof rngFor>): boolean {
-  const toll = rng.range(def.toll[0], def.toll[1]) * severity;
+  // Malá kočovná tlupa povodni prostě uteče. Plnou daň platí až husté,
+  // usedlé osídlení, které má co ztratit a nemá kam jít. Bez tohohle
+  // vymírala skoro polovina civilizací ještě v paleolitu.
+  const exposure = 0.35 + 0.65 * Math.min(1, target.population / 2000);
+  const toll = rng.range(def.toll[0], def.toll[1]) * severity * exposure;
   target.population = Math.max(0, target.population * (1 - Math.min(0.95, toll)));
 
   const wiped =
@@ -289,9 +307,12 @@ function meanRivalry(world: World): number {
 /**
  * Výzkumný výkon za tick.
  *
- * Násobiče výzkumu se stejně jako u kapacity v datech milníků násobí, takže
- * surový součin roste mezi epochami o dva řády. Stejný změkčující exponent
- * drží tempo v rozsahu, který jde ještě autorsky vyvážit.
+ * Exponenty jsou sublineární — víc lidí znamená i víc koordinace, která žádné
+ * poznání nepřinese, a násobiče výzkumu se přes stovku milníků násobí rychleji,
+ * než je únosné. Snižovat je ale dál nemá smysl: při 0.45 a 0.3 vymřelo
+ * 92 % civilizací v neolitu, protože populace nestačila uživit ani vlastní
+ * objevování. Přebujelá populace pozdních epoch se řeší v datech milníků,
+ * ne tady.
  */
 export function researchOutput(world: World, years: number): number {
   const { population, literacy, specialization, researchMul } = world.stats;
@@ -472,6 +493,37 @@ function driftRivalry(world: World, years: number): void {
   }
 }
 
+/**
+ * Jaderná eskalace visí na vypuknutí konkrétní války, ne na hodu každý tick.
+ *
+ * Původní verze házela každý tick, když byl válečný tlak vysoký. Jenže epocha
+ * trvá pět set ticků, takže i dvě procenta na tick znamenala jistou smrt —
+ * jaderná válka vyhladila 48 % všech civilizací a žádná se nedostala přes
+ * informační věk. Vázat riziko na řídkou událost ho drží ohraničené
+ * a zároveň dramatičtější.
+ */
+function maybeNuclearEscalation(
+  world: World,
+  a: Faction,
+  b: Faction,
+  rivalry: number,
+  rng: ReturnType<typeof rngFor>,
+  events: WorldEvent[],
+): boolean {
+  if (!has(world, 'nuclear_weapons')) return false;
+  const restraint = has(world, 'global_governance') ? 0.25 : 1;
+  if (!rng.chance(0.12 * rivalry * restraint)) return false;
+
+  endWith(
+    world,
+    events,
+    'self_destruction',
+    'nuclear_war',
+    `Spor mezi ${a.name.ins} a ${b.name.ins} se rozhodl během jediného odpoledne. Z ${world.settlements.length} osad nezůstalo nic, co by stálo za jméno.`,
+  );
+  return true;
+}
+
 function maybeWar(world: World, events: WorldEvent[]): void {
   if (world.factions.length < 2) return;
   const rng = rngFor(world.seed, world.tick, STREAM.war, 7);
@@ -480,8 +532,13 @@ function maybeWar(world: World, events: WorldEvent[]): void {
     for (const b of world.factions) {
       if (a.id >= b.id) continue; // každou dvojici jen jednou, stabilně podle id
       const rivalry = Math.max(a.rivalry[b.id] ?? 0, b.rivalry[a.id] ?? 0);
-      if (rivalry < 0.5) continue;
-      if (!rng.chance(0.06 * rivalry)) continue;
+      if (rivalry < 0.55) continue;
+
+      // Šance je na DVOJICI a na TICK. Při osmi frakcích je dvojic 28
+      // a epocha trvá pět set ticků, takže i jedno procento znamenalo víc
+      // než jednu válku za tick. Války mají být vzácné a tím pádem významné.
+      const deterrence = has(world, 'nuclear_weapons') ? 0.3 : 1;
+      if (!rng.chance(0.0009 * rivalry * deterrence)) continue;
 
       const aSet = world.settlements.filter((s) => s.factionId === a.id);
       const bSet = world.settlements.filter((s) => s.factionId === b.id);
@@ -503,6 +560,8 @@ function maybeWar(world: World, events: WorldEvent[]): void {
       a.rivalry[b.id] = clamp01(rivalry - 0.3);
       b.rivalry[a.id] = clamp01(rivalry - 0.3);
       world.pressures.war = clamp01(world.pressures.war + 0.4);
+
+      if (maybeNuclearEscalation(world, a, b, rivalry, rng, events)) return;
 
       events.push(
         event(
@@ -577,6 +636,7 @@ function checkCollapse(world: World, popBefore: number, events: WorldEvent[]): v
     world.tech.progress[id] = 0;
     if (!world.tech.lost.includes(id)) world.tech.lost.push(id);
   }
+  world.tech.everLost += lost.length;
   recomputeDerived(world);
 
   const names = lost
@@ -607,7 +667,121 @@ function checkCollapse(world: World, popBefore: number, events: WorldEvent[]): v
   }
 }
 
+// ─────────────────────────────────────────── Průmyslové oteplování
+
+const has = (world: World, id: string): boolean => world.tech.unlocked[id] !== undefined;
+
+/**
+ * Krize, kterou si civilizace vyrobí sama.
+ *
+ * Od chvíle, kdy stojí továrny, se do atmosféry načítá teplo. Zastavit to jde
+ * jen tím, co civilizace objeví — obnovitelnou sítí, fúzí, jádrem nebo přímo
+ * klimatickým inženýrstvím. Planety s vysokým skleníkovým efektem to odnesou
+ * dřív. Je to jediná pohroma v celé simulaci, kterou nezpůsobí svět, ale ona sama.
+ */
+function updateIndustrialWarming(world: World, years: number): void {
+  const c = world.climate;
+  if (!has(world, 'factory')) {
+    // Bez průmyslu se přebytečné teplo pomalu vytrácí.
+    c.industrialWarming = Math.max(0, c.industrialWarming - years * 0.002);
+    return;
+  }
+
+  let emission = 0.011;
+  if (has(world, 'assembly_line')) emission += 0.006;
+  if (has(world, 'internal_combustion')) emission += 0.006;
+  if (has(world, 'plastics')) emission += 0.003;
+
+  let mitigation = 0;
+  if (has(world, 'nuclear_power')) mitigation += 0.008;
+  if (has(world, 'renewable_grid')) mitigation += 0.016;
+  if (has(world, 'fusion')) mitigation += 0.022;
+  if (has(world, 'climate_engineering')) mitigation += 0.03;
+
+  const greenhouseGain = 0.6 + world.planet.greenhouse;
+  const rate = emission * greenhouseGain - mitigation;
+  c.industrialWarming = Math.max(0, c.industrialWarming + rate * years);
+}
+
+const WARMING_CRISIS = 4;
+const WARMING_FATAL = 9;
+
+function checkWarmingCrisis(world: World, before: number, events: WorldEvent[]): void {
+  const now = world.climate.industrialWarming;
+  if (before < WARMING_CRISIS && now >= WARMING_CRISIS) {
+    events.push(
+      event(
+        world,
+        'climate',
+        1,
+        `Průměrná teplota stoupla o ${now.toFixed(1)} °C a nikdo už nemohl tvrdit, že za to může slunce. Pobřežní osady se začaly stěhovat.`,
+        { industrialWarming: now, onset: true },
+      ),
+    );
+  } else if (before >= WARMING_CRISIS && now < WARMING_CRISIS) {
+    events.push(
+      event(
+        world,
+        'climate',
+        1,
+        'Křivka oteplování se poprvé zlomila dolů. Trvalo to déle, než mělo.',
+        { industrialWarming: now, onset: false },
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────── Konce
+
 const STAGNATION_LIMIT = 500;
+
+function endWith(
+  world: World,
+  events: WorldEvent[],
+  kind: EndingKind,
+  cause: EndingCause,
+  text: string,
+): void {
+  world.ending = { kind, cause, tick: world.tick, year: world.year };
+  events.push(event(world, 'ending', 1, text, { ending: kind, cause }));
+}
+
+/**
+ * Sebezničení. Civilizace musí mít čím — a musí být v situaci, kdy to použije.
+ * Proto jsou všechny tři cesty podmíněné konkrétním milníkem i konkrétním stavem.
+ */
+function checkSelfDestruction(world: World, events: WorldEvent[]): boolean {
+  const rng = rngFor(world.seed, world.tick, STREAM.collapse, 31);
+
+  // Sebereplikace bez celosvětové dohody, která by ji hlídala.
+  //
+  // Pravděpodobnost je schválně nízká: epocha trvá kolem 500 ticků, takže
+  // i zdánlivě malá šance na tick se nasčítá do jistoty. Na tomhle už jednou
+  // padla jaderná válka, která takhle zabila polovinu všech civilizací.
+  if (has(world, 'self_replication') && !has(world, 'global_governance') && rng.chance(0.0004)) {
+    endWith(
+      world,
+      events,
+      'self_destruction',
+      'grey_goo',
+      'Stroje, které uměly stavět samy sebe, dostaly zadání a nikdo jim nestanovil, kdy přestat.',
+    );
+    return true;
+  }
+
+  if (world.climate.industrialWarming > WARMING_FATAL) {
+    endWith(
+      world,
+      events,
+      'self_destruction',
+      'climate_collapse',
+      `Atmosféra se ohřála o ${world.climate.industrialWarming.toFixed(1)} °C. Věděli o tom celá staletí a nestihli s tím nic udělat.`,
+    );
+    return true;
+  }
+
+  return false;
+}
 
 function checkEnding(world: World, events: WorldEvent[]): void {
   if (world.ending) return;
@@ -618,29 +792,43 @@ function checkEnding(world: World, events: WorldEvent[]): void {
   world.brinkTicks = onBrink ? world.brinkTicks + 1 : 0;
 
   if (world.settlements.length === 0 || (world.brinkTicks >= 6 && world.stats.population < 12)) {
-    world.ending = { kind: 'extinction', tick: world.tick, year: world.year };
-    events.push(
-      event(world, 'ending', 1, `Poslední z nich zemřeli v ${formatYear(world.year, world.foundingYear)}. Planeta ${world.planet.name} zůstala prázdná.`, {
-        ending: 'extinction',
-      }),
+    endWith(
+      world,
+      events,
+      'extinction',
+      'collapse',
+      `Poslední z nich zemřeli v ${formatYear(world.year, world.foundingYear)}. Planeta ${world.planet.name} zůstala prázdná.`,
     );
     return;
   }
+
+  if (checkSelfDestruction(world, events)) return;
 
   if (world.idleTicks > STAGNATION_LIMIT) {
-    world.ending = { kind: 'stagnation', tick: world.tick, year: world.year };
-    events.push(
-      event(world, 'ending', 1, 'Nic nového už nepřišlo. Civilizace se usadila v tom, co uměla, a zůstala tam.', {
-        ending: 'stagnation',
-      }),
+    endWith(
+      world,
+      events,
+      'stagnation',
+      'quiet',
+      'Nic nového už nepřišlo. Civilizace se usadila v tom, co uměla, a zůstala tam.',
     );
     return;
   }
 
-  const contentDone = world.epoch >= LAST_EPOCH && milestonesOfEpoch(LAST_EPOCH).every((m) => world.tech.unlocked[m.id]);
-  if (contentDone) {
-    world.ending = { kind: 'transcendence', tick: world.tick, year: world.year };
-    events.push(event(world, 'ending', 1, 'Odsud už nevidíme dál.', { ending: 'transcendence' }));
+  // Transcendence se počítá jen z dosažitelných milníků — na planetě bez
+  // uranu by jinak poslední epocha nešla dokončit nikdy.
+  if (world.epoch >= LAST_EPOCH) {
+    const reachable = reachableIds(world);
+    const finale = milestonesOfEpoch(LAST_EPOCH).filter((m) => reachable.has(m.id));
+    if (finale.length > 0 && finale.every((m) => has(world, m.id))) {
+      endWith(
+        world,
+        events,
+        'transcendence',
+        'ascension',
+        'Přestali být tím, čím začínali, a odešli směrem, který odsud nedokážeme popsat. Kronika tady končí, protože další zápisy už bychom nepřečetli.',
+      );
+    }
   }
 }
 
@@ -656,8 +844,11 @@ export function tickWorld(prev: World): TickResult {
   const years = yearsPerTick(world.epoch);
   world.year += years;
 
+  const warmingBefore = world.climate.industrialWarming;
+  updateIndustrialWarming(world, years);
   updateClimate(world);
   checkIceAge(world, events);
+  checkWarmingCrisis(world, warmingBefore, events);
 
   world.access = computeAccess(world);
   recomputeDerived(world);
@@ -682,7 +873,37 @@ export function tickWorld(prev: World): TickResult {
   checkEnding(world, events);
 
   recomputeDerived(world);
+  world.peakPopulation = Math.max(world.peakPopulation, world.stats.population);
   return { world, events };
+}
+
+/**
+ * Odsimuluje N ticků napříč po sobě jdoucími civilizacemi.
+ *
+ * Když jedna zanikne, na nové planetě začíná další — takhle bude web běžet
+ * doopravdy. Celá posloupnost zůstává čistou funkcí prvního seedu.
+ */
+export function simulateCampaign(
+  startSeed: number,
+  ticks: number,
+): { world: World; events: WorldEvent[]; archive: RunSummary[] } {
+  let world = createWorld(startSeed);
+  const events: WorldEvent[] = [genesisEvent(world)];
+  const archive: RunSummary[] = [];
+
+  for (let i = 0; i < ticks; i++) {
+    if (world.ending) {
+      archive.push(summarizeRun(world));
+      world = nextRun(world);
+      events.push(genesisEvent(world));
+      continue;
+    }
+    const res = tickWorld(world);
+    world = res.world;
+    events.push(...res.events);
+  }
+
+  return { world, events, archive };
 }
 
 /** Odsimuluje N ticků a vrátí celou kroniku. */
