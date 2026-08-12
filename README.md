@@ -16,9 +16,8 @@ Inspirací byl [michalstrnadel/lili-octopus](https://github.com/michalstrnadel/l
 
 ## Stav
 
-Hotové jsou fáze **M1 až M3** — deterministický engine s úplným obsahem,
-kronika v terminálu a **běžící web**. Abstraktní vizualizace (mapa světa,
-spirála času, souhvězdí milníků) přijdou v M4; zatím je na webu kronika.
+Hotové jsou fáze **M1 až M4** — deterministický engine s úplným obsahem,
+kronika v terminálu a **běžící web se třemi pohledy**.
 
 **→ [maroskadlec.github.io/virtual-civilization](https://maroskadlec.github.io/virtual-civilization/)**
 
@@ -133,6 +132,37 @@ bez uranu nemůže zaniknout v jaderné válce, protože si ji nemá čím způs
 civilizace sama. Od chvíle, kdy stojí továrny, se teplo načítá; zastavit to jde
 jen obnovitelnou sítí, fúzí, jádrem nebo klimatickým inženýrstvím. Někdo to
 stihne, někdo ne.
+
+## Pohledy na webu
+
+Všechno je 2D — Canvas a SVG, žádné 3D.
+
+**SVĚT** je planeta v Lambertově azimutální projekci se stejnou plochou: střed je
+jeden pól, okraj druhý, rovník leží na poloměru 0,707. Políčka se neberou z žádné
+textury — každé se ptá téže funkce `biomeAt`, kterou používá simulace, takže
+při ochlazení mapa zbělá proto, že se posunula pásma. Prstenec kolem disku ukazuje
+podíl odemčených milníků a od orbitálních epoch přibývají obíhající tělesa.
+
+**ČAS** je logaritmická spirála, na které jeden tick zabere vždy stejně dlouhý
+oblouk. Popisky u prstenců ale ukazují simulované roky — vnitřní závit spolkne
+statisíce let paleolitu, vnější sotva desítky. Zrychlování dějin tak není tvrzení,
+ale tvar.
+
+**MILNÍKY** jsou strom poznání jako hvězdná mapa. Sloupce jsou epochy, čáry vedou
+od předpokladu k tomu, co umožnil. Svítící hvězdy jsou zvládnuté, prstýnek značí
+rozpracované, rudý uhlík zapomenuté při kolapsu a vyhaslé body to, co na téhle
+planetě nejde, protože k tomu chybí surovina.
+
+Pro vývoj vizualizací (a pro rychlou představu, jak vypadá vyzrálý svět) umí web
+odsimulovat civilizaci rovnou v prohlížeči:
+
+```
+?demo=6000&seed=11
+```
+
+Genesis se posune do minulosti přesně o zadaný počet ticků, takže ukázka sedí
+na skutečné hodiny stejně jako ostrý provoz. V hlavičce se pak zobrazí výrazné
+označení, aby si to nikdo nespletl s živou civilizací.
 
 ## Nasazení
 
