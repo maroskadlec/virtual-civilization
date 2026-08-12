@@ -40,7 +40,7 @@ npm run chronicle -- --seed 5 --ticks 2600 --min-weight 0.7
 Vyvažovací nástroj přes mnoho světů:
 
 ```bash
-npm run sweep -- 60 -- --ticks 6000
+npm run sweep -- 60 --ticks 6000
 ```
 
 Vypíše rozložení dosažených epoch, délky epoch v ticích, konce civilizací,
