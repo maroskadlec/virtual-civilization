@@ -16,9 +16,9 @@ Inspirací byl [michalstrnadel/lili-octopus](https://github.com/michalstrnadel/l
 
 ## Stav
 
-Hotové jsou fáze **M1 až M5** — deterministický engine s úplným obsahem,
-kronika v terminálu, **běžící web se třemi pohledy** a předpovědi, které se
-samy zpětně vyhodnocují.
+Hotové jsou fáze **M1 až M5.5** — deterministický engine s úplným obsahem,
+kronika v terminálu, **běžící web se třemi pohledy**, předpovědi, které se
+samy zpětně vyhodnocují, a kronika, která si pamatuje vlastní dějiny.
 
 **→ [maroskadlec.github.io/virtual-civilization](https://maroskadlec.github.io/virtual-civilization/)**
 
@@ -36,6 +36,28 @@ Jak civilizace končí, měřeno přes 30 světů:
 | stagnace | zbytek |
 
 Cestou se 24 z 30 civilizací propadne do temného věku a část znalostí zapomene.
+
+### Co dělá kroniku kronikou
+
+Zápis, který zná jen svou vlastní událost, je položka logu. Souvislost vzniká
+až tím, co engine kolem ní ví:
+
+- **Následky.** Kolik lidí to stálo a jaká část osady to byla. „Zemřelo 6 863
+  lidí, každý třetí."
+- **Paměť.** Kolikátá je to pohroma svého druhu, kdy byla minulá, jestli byla
+  horší než všechny předchozí. Rekordy se posuzují **podílem**, ne počtem
+  mrtvých — populace roste přes několik řádů a v absolutních číslech by byla
+  „nejhorší v dějinách" skoro každá další rána.
+- **Jména.** Od doby bronzové mají objevy a války konkrétní lidi, kteří žijí
+  napříč několika událostmi a na konci dostanou nekrolog ze svých skutků.
+  Dřív ne: v paleolitu pokrývá jeden tick čtyři tisíciletí, takže by se
+  jednotlivec nedožil ani setiny ticku.
+- **Kapitoly.** Konec epochy uzavře ohlédnutí složené z celého období — jediný
+  zápis, který spojuje věci, co se staly stovky ticků od sebe.
+
+Jména lidí se skloňují strojově, a proto generátor drží tvrdé omezení: mužská
+jména končí souhláskou a skloňují se jako „pán", ženská končí na -a a skloňují
+se jako „žena". Obojí je bezvýjimečně pravidelné.
 
 ## Jak se na to podívat
 
@@ -244,6 +266,10 @@ npm run sim -- --backdate-days 40
 ```
 engine/    čistý TypeScript bez DOM — běží v Node i v prohlížeči
   campaign.ts           jediné místo, kde se potkají hodiny se simulací
+  tick.ts               mechanika: co se stalo
+  narrate.ts            vyprávění: jak se to řekne (sem jednou sedne LLM vrstva)
+  memory.ts             počítadla a rekordy, ze kterých vznikají souvislosti
+  figures.ts            pojmenovaní lidé a jejich nekrology
   milestones.early.ts   epochy 0–3
   milestones.late.ts    epochy 4–13
   milestones.data.ts    rejstřík a měřítka cen
@@ -269,6 +295,15 @@ budoucí nasazení: server commituje checkpoint, klient si od něj dopočítá z
 
 ## Dál
 
-- **M4** — vizualizace: kruhová mapa světa, logaritmická spirála času, souhvězdí milníků (2D, Canvas + SVG + GSAP)
-- **M5** — predikce metodou Monte Carlo a jejich zpětné vyhodnocení
-- **M6** — archiv minulých civilizací, volitelná LLM vrstva kroniky
+- **M6** — archiv minulých civilizací na webu
+
+LLM vrstva kroniky je **volitelná a záměrně úzká**. Jednotlivé zápisy píšou
+šablony nad bohatými daty: jsou gramaticky zaručené, deterministické a zadarmo.
+Model by u nich přidal jen sloh a obětoval determinismus. Co ale šablona nad
+jednou událostí nedokáže ani teoreticky, je syntéza napříč obdobím — a to je
+jediné místo, kam LLM patří: **ohlédnutí za érou**. Ta už v kronice jsou,
+zatím šablonová; model by přepisoval jen je. Takové zápisy jsou ze své povahy
+retrospektivní, píšou se jen o minulosti, která je vždycky commitnutá, takže
+se feed událostí nemá jak rozejít s tím, co si dopočítá klient.
+
+Bez API klíče je web úplný — jen bez těch ohlédnutí.

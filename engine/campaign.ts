@@ -20,7 +20,7 @@
 
 import { TICK_REAL_MS, tickIndexAt } from './epochs.js';
 import { genesisEvent, tickWorld } from './tick.js';
-import { createWorld, nextRun, summarizeRun } from './world.js';
+import { createWorld, ensureWorldShape, nextRun, summarizeRun } from './world.js';
 import { claimHolds, emptyScoreboard, recordOutcome } from './predict.js';
 import type { Prediction, Scoreboard } from './predict.js';
 import type { RunSummary, World, WorldEvent } from './types.js';
@@ -197,7 +197,7 @@ export function deserializeCampaign(json: string): Campaign {
     genesisMs: parsed.genesisMs,
     startSeed: parsed.startSeed ?? 0,
     globalTick: parsed.globalTick ?? 0,
-    world: parsed.world,
+    world: ensureWorldShape(parsed.world),
     archive: parsed.archive ?? [],
     predictions: parsed.predictions ?? [],
     scoreboard:

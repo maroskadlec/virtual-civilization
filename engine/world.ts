@@ -13,6 +13,7 @@ import type { Language } from './names.js';
 import { MILESTONE_BY_ID } from './milestones.data.js';
 import { computeAccess } from './research.js';
 import { hashSeed } from './rng.js';
+import { emptyEra, emptyMemory } from './memory.js';
 import type { Culture, Faction, RunSummary, Settlement, World } from './types.js';
 
 export const GENESIS_POPULATION = 35;
@@ -84,6 +85,9 @@ export function createWorld(seed: number, run = 1): World {
     climate,
     factions: [faction],
     settlements: [settlement],
+    figures: [],
+    memory: emptyMemory(),
+    era: emptyEra(0, 0, 0, GENESIS_POPULATION),
     tech: { unlocked: {}, progress: {}, lost: [], everLost: 0 },
     pressures: {
       cold: 0.4,
@@ -107,11 +111,28 @@ export function createWorld(seed: number, run = 1): World {
     ending: null,
     peakPopulation: GENESIS_POPULATION,
     firstFactionName: faction.name.nom,
-    nextIds: { faction: 1, settlement: 1 },
+    nextIds: { faction: 1, settlement: 1, figure: 1 },
   };
 
   world.access = computeAccess(world);
   recomputeDerived(world);
+  return world;
+}
+
+/**
+ * Doplní pole, která starší checkpoint ještě neznal.
+ *
+ * Bez tohohle by runner po nasazení nové verze spadl na chybějícím `memory`,
+ * checkpoint by už nikdy nepřepsal — a protože z něj staví i web, rozbilo by
+ * to nasazení natrvalo. Jednou už se to stalo u predikcí.
+ */
+export function ensureWorldShape(world: World): World {
+  if (!world.figures) world.figures = [];
+  if (!world.memory) world.memory = emptyMemory();
+  if (!world.era) {
+    world.era = emptyEra(world.epoch, world.tick, world.year, world.stats?.population ?? 0);
+  }
+  if (world.nextIds && world.nextIds.figure === undefined) world.nextIds.figure = 1;
   return world;
 }
 

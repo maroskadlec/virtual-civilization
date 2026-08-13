@@ -180,8 +180,29 @@ a:hover {
 
 .kind-disaster_aggregate .entry-text,
 .kind-settlement_founded .entry-text,
-.kind-settlement_lost .entry-text {
+.kind-settlement_lost .entry-text,
+.kind-figure_death .entry-text {
   color: var(--ink-dim);
+}
+
+/*
+ * Kapitola není položkou seznamu, ale ohlédnutím za celou epochou. Vlasová
+ * linka zleva ji odděluje od proudu událostí, aniž by potřebovala výplň —
+ * čtenář má poznat, že tady se na chvíli přestalo vyprávět a začalo shrnovat.
+ */
+.entry.kind-chapter {
+  padding: 26px 0 24px;
+}
+
+.kind-chapter .entry-mark {
+  color: var(--epoch);
+}
+
+.kind-chapter .entry-text {
+  border-left: 1px solid var(--rule);
+  padding-left: 18px;
+  color: var(--ink);
+  font-style: italic;
 }
 
 /* Zlom epochy a zrození civilizace nejsou položky seznamu, ale předěly. */

@@ -149,6 +149,27 @@ describe('kampaň', () => {
     expect(() => advanceCampaign(restored, 60)).not.toThrow();
   });
 
+  it('checkpoint bez paměti a lidí se doplní, ne aby runner spadl', () => {
+    // Stejná past jako u predikcí, jen o patro níž: chybí-li pole ve světě,
+    // runner spadne, checkpoint už nikdy nepřepíše — a web na něm staví taky.
+    const campaign = createCampaign(1, 0);
+    advanceCampaign(campaign, 60);
+
+    const raw = JSON.parse(serializeCampaign(campaign)) as {
+      world: Record<string, unknown> & { nextIds: Record<string, unknown> };
+    };
+    delete raw.world.figures;
+    delete raw.world.memory;
+    delete raw.world.era;
+    delete raw.world.nextIds.figure;
+
+    const restored = deserializeCampaign(JSON.stringify(raw));
+    expect(restored.world.figures).toEqual([]);
+    expect(restored.world.memory.wars).toBe(0);
+    expect(restored.world.era.epoch).toBe(restored.world.epoch);
+    expect(() => advanceCampaign(restored, 140)).not.toThrow();
+  });
+
   it('checkpoint bez světa se odmítne', () => {
     expect(() => deserializeCampaign('{"genesisMs":0}')).toThrow(/neobsahuje svět/);
   });

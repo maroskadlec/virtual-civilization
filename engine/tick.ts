@@ -6,13 +6,13 @@
  * z `rngFor(seed, tick, stream)`.
  */
 
-import { rngFor, STREAM } from './rng.js';
+import { rngFor, STREAM, hashString } from './rng.js';
 import { LAST_EPOCH, epochDef, formatYear, yearsPerTick } from './epochs.js';
 import { MAX_CONTENT_EPOCH, MILESTONE_BY_ID, milestonesOfEpoch } from './milestones.data.js';
 import { applyResearch, computeAccess, reachableIds, shouldAdvanceEpoch } from './research.js';
 import { DISASTERS, rollDisasters } from './disasters.js';
 import type { DisasterDef } from './disasters.js';
-import { BIOME_FROM, BIOME_IN, BIOME_YIELD, biomeAt, randomPosition } from './planet.js';
+import { BIOME_FROM, BIOME_IN, BIOME_LABEL, BIOME_YIELD, biomeAt, randomPosition } from './planet.js';
 import { factionName, placeName } from './names.js';
 import {
   languageOf,
@@ -23,14 +23,42 @@ import {
   usedFactionNames,
   usedSettlementNames,
 } from './world.js';
+import { actorFor, ageFigures, recordDeed } from './figures.js';
+import {
+  emptyEra,
+  rememberCollapse,
+  rememberDisaster,
+  rememberIceAge,
+  rememberSchism,
+  rememberSettlementFounded,
+  rememberSettlementLost,
+  rememberWar,
+  rememberDeaths,
+} from './memory.js';
+import {
+  chapterText,
+  collapseSentence,
+  disasterSentence,
+  iceAgeSentence,
+  milestoneSentence,
+  necrology,
+  num,
+  settlementLostSentence,
+  settlementsPhrase,
+  tollClause,
+  warSentence,
+} from './narrate.js';
 import type {
-  Declined,
   EndingCause,
   EndingKind,
+  EventContext,
   Faction,
+  Figure,
+  FigureRole,
   PressureId,
   Settlement,
   TickResult,
+  Toll,
   World,
   WorldEvent,
 } from './types.js';
@@ -44,15 +72,65 @@ const SETTLEMENT_HARD_CAP = 90;
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
+/**
+ * Snímek okamžiku události.
+ *
+ * Zvídavost se do „nejsilnějšího tlaku" nepočítá: roste s gramotností
+ * a od klasické éry dál je trvale nejvyšší ze všech, takže by přebila
+ * všechno ostatní a nic by neřekla.
+ */
+function contextOf(world: World): EventContext {
+  let pressure: PressureId | null = null;
+  let best = 0.45;
+  for (const p of PRESSURE_IDS) {
+    if (p === 'curiosity') continue;
+    if (world.pressures[p] > best) {
+      best = world.pressures[p];
+      pressure = p;
+    }
+  }
+  return {
+    epoch: world.epoch,
+    population: Math.round(world.stats.population),
+    settlements: world.settlements.length,
+    factions: world.factions.length,
+    pressure,
+  };
+}
+
 function event(
   world: World,
   kind: WorldEvent['kind'],
   weight: number,
   text: string,
   data: Record<string, unknown> = {},
+  toll?: Toll,
 ): WorldEvent {
-  return { run: world.run, tick: world.tick, year: world.year, kind, weight, text, data };
+  const e: WorldEvent = {
+    run: world.run,
+    tick: world.tick,
+    year: world.year,
+    kind,
+    weight,
+    text,
+    context: contextOf(world),
+    data,
+  };
+  if (toll && toll.deaths >= 1) e.toll = toll;
+  return e;
 }
+
+/** Následky jedné rány — kolik jich bylo předtím a kolik potom. */
+function tollOf(before: number, after: number): Toll {
+  return {
+    before: Math.round(before),
+    after: Math.round(after),
+    deaths: Math.max(0, Math.round(before - after)),
+  };
+}
+
+/** Podíl zasažených. Rekordy se porovnávají tímhle, ne počtem mrtvých. */
+const shareOf = (toll: Toll): number => (toll.before > 0 ? toll.deaths / toll.before : 0);
 
 // ─────────────────────────────────────────── Klima
 
@@ -108,8 +186,17 @@ function checkIceAge(world: World, events: WorldEvent[]): void {
   // Glaciálů projde v paleolitu desítky. Jedna věta na oba směry by z kroniky
   // udělala kopírák, takže se střídá několik znění.
   const rng = rngFor(world.seed, world.tick, STREAM.flavor, 5);
-  const text = wants ? rng.pick(ICE_AGE_ONSET) : rng.pick(ICE_AGE_END);
-  events.push(event(world, 'climate', weight, text, { onset: wants }));
+  const nth = wants ? rememberIceAge(world) : world.memory.iceAges;
+  const base = wants ? rng.pick(ICE_AGE_ONSET) : rng.pick(ICE_AGE_END);
+
+  events.push(
+    event(world, 'climate', weight, iceAgeSentence(rng, base, wants, nth), {
+      onset: wants,
+      nth,
+      temperature: Number(world.climate.temperature.toFixed(2)),
+      iceCoverage: Number(world.climate.iceCoverage.toFixed(3)),
+    }),
+  );
 }
 
 const ICE_AGE_ONSET: readonly string[] = [
@@ -185,7 +272,15 @@ function applyDisasters(world: World, years: number, events: WorldEvent[]): void
 
   const worst = ordered[0];
   const target = pickSettlement(world, rng);
+  const before = target?.population ?? 0;
   const wiped = target && worst ? applyToll(world, worst.def, target, 1, rng) : false;
+  const toll = tollOf(before, wiped ? 0 : (target?.population ?? 0));
+
+  // Do paměti jde jen ta jedna rána, která se skutečně projevila. Kdyby se
+  // do počítadel zapsaly všechny desítky hodů hlubokého času, „potřetí za
+  // dvě století" by přestalo být možné napsat už v paleolitu.
+  if (worst) rememberDisaster(world, worst.def.id, toll.deaths, shareOf(toll));
+  if (wiped) rememberSettlementLost(world);
 
   // Trvalý neklid období se ale projeví — jako zvýšené tlaky, ne jako mrtví.
   for (const { def, count } of ordered) {
@@ -208,15 +303,24 @@ function applyDisasters(world: World, years: number, events: WorldEvent[]): void
     .map((r) => `${r.count}× ${r.def.label}`)
     .join(', ');
 
+  const closing = wiped
+    ? `Osada ${target?.name ?? '?'} se z něj už nezvedla.`
+    : 'Osídlení pokaždé ustoupilo a znovu se vrátilo.';
+  const deaths = tollClause(toll);
+
   events.push(
     event(
       world,
       'disaster_aggregate',
       wiped ? 0.75 : 0.5,
-      wiped
-        ? `Zlé období: ${summary}. Osada ${target?.name ?? '?'} se z něj už nezvedla.`
-        : `Zlé období: ${summary}. Osídlení pokaždé ustoupilo a znovu se vrátilo.`,
-      { rolls: ordered.map((r) => ({ id: r.def.id, count: r.count })), wiped },
+      `Zlé období: ${summary}. ${closing}${deaths ? ` ${deaths}` : ''}`,
+      {
+        rolls: ordered.map((r) => ({ id: r.def.id, count: r.count })),
+        wiped,
+        expected: Math.round(expected),
+        total,
+      },
+      toll,
     ),
   );
 }
@@ -251,24 +355,32 @@ function strikeOnce(world: World, def: DisasterDef, rng: ReturnType<typeof rngFo
 
   const before = target.population;
   const wiped = applyToll(world, def, target, 1, rng);
+  const toll = tollOf(before, wiped ? 0 : target.population);
+  const memo = rememberDisaster(world, def.id, toll.deaths, shareOf(toll));
+
   const line = rng.pick(def.lines).replace('{osada}', target.name);
-  const lost = Math.round(before - (wiped ? 0 : target.population));
 
   events.push(
-    event(world, 'disaster', wiped ? 0.9 : 0.6, line, {
-      disaster: def.id,
-      settlement: target.name,
-      wiped,
-      lost,
-    }),
+    event(
+      world,
+      'disaster',
+      wiped ? 0.9 : 0.6,
+      disasterSentence(rng, line, memo, toll),
+      { disaster: def.id, settlement: target.name, wiped, nth: memo.nth },
+      toll,
+    ),
   );
 
   if (wiped) {
+    rememberSettlementLost(world);
     events.push(
-      event(world, 'settlement_lost', 0.8, `Osada ${target.name} zanikla.`, {
-        settlement: target.name,
-        cause: def.id,
-      }),
+      event(
+        world,
+        'settlement_lost',
+        0.8,
+        settlementLostSentence(target.name, world.memory.settlementsLost),
+        { settlement: target.name, cause: def.id },
+      ),
     );
   }
 }
@@ -338,27 +450,18 @@ export function researchOutput(world: World, years: number): number {
 }
 
 /**
- * Věta o milníku.
+ * Komu se objev připíše.
  *
- * Všechny varianty drží název milníku v 1. pádě za dvojtečkou a shodu věší
- * na slovo „milník" nebo „objev". Kdyby název stál jako předmět, čeština by
- * chtěla akuzativ — a „zvládli filosofie" místo „filosofii" je přesně ta
- * chyba, kterou tímhle obcházíme, aniž bychom u sta názvů evidovali rod.
+ * Ne každému — a čím dál v dějinách, tím míň. V raných epochách stojí za
+ * objevem jeden člověk, v pozdních je to práce celých institucí a jmenovat
+ * u každého objevu jednoho učence by bylo lživé i únavné.
  */
-function milestoneSentence(
-  rng: ReturnType<typeof rngFor>,
-  faction: Declined,
-  name: string,
-  because: string,
-  blurb: string,
-): string {
-  const variants = [
-    `${faction.nom} dosáhli milníku: ${name} — ${because}. ${blurb}`,
-    `Nový milník u ${faction.gen}: ${name} — ${because}. ${blurb}`,
-    `U ${faction.gen} se prosadil objev: ${name} — ${because}. ${blurb}`,
-    `${faction.dat} se podařil milník: ${name} — ${because}. ${blurb}`,
-  ];
-  return rng.pick(variants);
+const RESEARCH_ROLES: readonly FigureRole[] = ['scholar', 'builder', 'seer'];
+
+function creditFor(world: World, factionId: string, milestoneId: string, rng: ReturnType<typeof rngFor>): Figure | null {
+  if (!rng.chance(world.epoch <= 6 ? 0.5 : 0.28)) return null;
+  const role = rng.weighted(RESEARCH_ROLES, (r) => (r === 'scholar' ? 3 : 1));
+  return actorFor(world, factionId, role, hashString(milestoneId));
 }
 
 function doResearch(world: World, years: number, events: WorldEvent[]): boolean {
@@ -367,13 +470,33 @@ function doResearch(world: World, years: number, events: WorldEvent[]): boolean 
 
   for (const { milestone, because } of outcome.unlocked) {
     const who = rng.pick(world.factions);
+    world.era.milestones.push(milestone.id);
+
+    const actor = creditFor(world, who.id, milestone.id, rng);
+    recordDeed(actor, { kind: 'milestone', what: milestone.name, year: world.year });
+
     events.push(
-      event(world, 'milestone', 1, milestoneSentence(rng, who.name, milestone.name, because, milestone.blurb), {
-        milestone: milestone.id,
-        name: milestone.name,
-        faction: who.id,
-        because,
-      }),
+      event(
+        world,
+        'milestone',
+        1,
+        milestoneSentence(
+          rng,
+          who.name,
+          milestone.name,
+          because,
+          milestone.blurb,
+          actor,
+          world.era.milestones.length,
+        ),
+        {
+          milestone: milestone.id,
+          name: milestone.name,
+          faction: who.id,
+          because,
+          figure: actor?.id ?? null,
+        },
+      ),
     );
   }
 
@@ -442,7 +565,8 @@ function maybeMigrate(world: World, events: WorldEvent[]): void {
       world,
       'settlement_founded',
       0.8,
-      `Tlupa opustila ${leaving} a vydala se hledat lepší krajinu. Usadila se ${BIOME_IN[best.biome]}.`,
+      `Tlupa opustila ${leaving} a vydala se hledat lepší krajinu. Usadila se ${BIOME_IN[best.biome]}. ` +
+        `Bylo jich ${num(home.population)} a nesli všechno, co uměli.`,
       { settlement: home.name, biome: best.biome, migration: true },
     ),
   );
@@ -480,12 +604,26 @@ function maybeFoundSettlement(world: World, events: WorldEvent[]): void {
     foundedTick: world.tick,
   };
   world.settlements.push(s);
+  rememberSettlementFounded(world);
+
+  const founder = actorFor(world, parent.factionId, 'chieftain', hashString(name));
+  recordDeed(founder, { kind: 'settlement', what: name, year: world.year });
+
+  // Zakládání osad je nejčastější událost v kronice a má nejnižší váhu.
+  // Rozepsat ji do tří vět znamenalo, že v pozdních epochách utopila všechno
+  // ostatní — proto jedna věta a jen ta dvě čísla, která nejsou odjinud vidět.
+  // Pořadí se připomene jen po desítkách, kde přestává být samozřejmostí.
+  const count = world.settlements.length;
+  const order = count % 10 === 0 ? ` Byla ${count}. osadou civilizace.` : '';
 
   events.push(
-    event(world, 'settlement_founded', 0.4, `Z ${parent.name} odešla část lidí a založila osadu ${name}.`, {
-      settlement: name,
-      from: parent.name,
-    }),
+    event(
+      world,
+      'settlement_founded',
+      0.4,
+      `Z ${parent.name} odešlo ${num(moved)} lidí a založili osadu ${name} ${BIOME_IN[s.biome]}.${order}`,
+      { settlement: name, from: parent.name, biome: s.biome, moved: Math.round(moved) },
+    ),
   );
 }
 
@@ -528,13 +666,28 @@ function maybeSplitFaction(world: World, events: WorldEvent[]): void {
   parent.rivalry[id] = rng.range(0.3, 0.6);
   world.factions.push(child);
 
+  const nth = rememberSchism(world);
+  // Rozkol se zapíše tomu, kdo v tu chvíli mateřskou frakci vedl.
+  recordDeed(actorFor(world, parent.id, 'chieftain', hashString(id)), {
+    kind: 'schism',
+    what: child.name.nom,
+    year: world.year,
+  });
+
+  const moved = Math.round(taken.reduce((sum, s) => sum + s.population, 0));
+  const history =
+    nth === 1
+      ? 'Do té doby drželi pohromadě.'
+      : `${nth}. rozkol v jejich dějinách.`;
+
   events.push(
     event(
       world,
       'faction_split',
       0.85,
-      `${child.name.nom} se odtrhli od ${parent.name.gen}. Rozešli se ve zlém a vzali si ${taken.length} osad.`,
-      { faction: id, from: parent.id, settlements: taken.length },
+      `${child.name.nom} se odtrhli od ${parent.name.gen}. Rozešli se ve zlém a vzali si ` +
+        `${settlementsPhrase(taken.length)} s ${num(moved)} lidmi. ${history}`,
+      { faction: id, from: parent.id, settlements: taken.length, people: moved, nth },
     ),
   );
 }
@@ -609,8 +762,11 @@ function maybeWar(world: World, events: WorldEvent[]): void {
       const bSet = world.settlements.filter((s) => s.factionId === b.id);
       if (aSet.length === 0 || bSet.length === 0) continue;
 
-      const toll = rng.range(0.05, 0.2);
-      for (const s of [...aSet, ...bSet]) s.population *= 1 - toll;
+      const engaged = [...aSet, ...bSet];
+      const beforePop = engaged.reduce((x, s) => x + s.population, 0);
+      const tollRate = rng.range(0.05, 0.2);
+      for (const s of engaged) s.population *= 1 - tollRate;
+      const casualties = tollOf(beforePop, engaged.reduce((x, s) => x + s.population, 0));
 
       const aPow = aSet.reduce((x, s) => x + s.population, 0) * (1 + world.stats.might);
       const bPow = bSet.reduce((x, s) => x + s.population, 0) * (1 + world.stats.might);
@@ -628,13 +784,42 @@ function maybeWar(world: World, events: WorldEvent[]): void {
 
       if (maybeNuclearEscalation(world, a, b, rivalry, rng, events)) return;
 
+      const memo = rememberWar(world);
+      rememberDeaths(world, casualties.deaths);
+
+      const champion = actorFor(world, winner.id, 'general', hashString(`${a.id}:${b.id}`));
+      recordDeed(champion, { kind: 'war_won', what: loser.name.nom, year: world.year });
+      recordDeed(actorFor(world, loser.id, 'general', hashString(`${b.id}:${a.id}`)), {
+        kind: 'war_lost',
+        what: winner.name.nom,
+        year: world.year,
+      });
+
       events.push(
         event(
           world,
           'war',
           0.95,
-          `Válka mezi ${a.name.ins} a ${b.name.ins} skončila po letech vyčerpáním. ${winner.name.nom} si podrobili ${seized.length} osad ${loser.name.gen}.`,
-          { a: a.id, b: b.id, winner: winner.id, seized: seized.length },
+          warSentence(
+            rng,
+            a.name,
+            b.name,
+            winner.name,
+            loser.name,
+            seized.length,
+            memo,
+            casualties,
+            champion,
+          ),
+          {
+            a: a.id,
+            b: b.id,
+            winner: winner.id,
+            seized: seized.length,
+            nth: memo.nth,
+            figure: champion?.id ?? null,
+          },
+          casualties,
         ),
       );
     }
@@ -656,6 +841,43 @@ function maybeWar(world: World, events: WorldEvent[]): void {
 
 // ─────────────────────────────────────────── Epocha, kolaps, konec
 
+/**
+ * Uzavře rozepsanou kapitolu a založí novou.
+ *
+ * Tohle je jediný zápis v celé kronice, který nevzniká z jedné události, ale
+ * z celého období — a proto je taky jediný, který dokáže spojit věci, co se
+ * staly stovky ticků od sebe. Prázdné epochy se přeskakují: kapitola o tom,
+ * že se nestalo nic, nikoho nezajímá.
+ */
+function closeEra(world: World, events: WorldEvent[]): void {
+  const era = world.era;
+  const eventful = era.milestones.length + era.wars + era.disasters > 0;
+
+  if (eventful) {
+    events.push(
+      event(
+        world,
+        'chapter',
+        1,
+        chapterText(era, epochDef(era.epoch).name, world.year, world.stats.population),
+        {
+          epoch: era.epoch,
+          years: Math.round(world.year - era.startYear),
+          milestones: era.milestones.length,
+          wars: era.wars,
+          disasters: era.disasters,
+          deaths: Math.round(era.deaths),
+          lost: era.lostMilestones,
+          populationFrom: Math.round(era.startPopulation),
+          populationTo: Math.round(world.stats.population),
+        },
+      ),
+    );
+  }
+
+  world.era = emptyEra(world.epoch, world.tick, world.year, world.stats.population);
+}
+
 function checkEpoch(world: World, events: WorldEvent[]): void {
   if (world.epoch >= Math.min(LAST_EPOCH, MAX_CONTENT_EPOCH)) return;
   const reachable = reachableIds(world);
@@ -665,6 +887,8 @@ function checkEpoch(world: World, events: WorldEvent[]): void {
 
   // Vstup do neolitu zakládá vlastní letopočet civilizace.
   if (world.epoch === 1 && world.foundingYear === null) world.foundingYear = world.year;
+
+  closeEra(world, events);
 
   events.push(
     event(world, 'epoch', 1, `Začíná nová epocha: ${epochDef(world.epoch).name}.`, {
@@ -708,13 +932,16 @@ function checkCollapse(world: World, popBefore: number, events: WorldEvent[]): v
     .map((id) => MILESTONE_BY_ID.get(id)?.name.toLowerCase())
     .filter((x): x is string => Boolean(x));
 
+  const nth = rememberCollapse(world, lost.length);
+
   events.push(
     event(
       world,
       'milestone_lost',
       1,
-      `Propad byl tak prudký, že se přetrhlo předávání znalostí. Zapomnělo se: ${names.join(', ')}.`,
-      { lost, severity },
+      collapseSentence(names, nth),
+      { lost, severity, nth },
+      tollOf(popBefore, world.stats.population),
     ),
   );
 
@@ -722,6 +949,7 @@ function checkCollapse(world: World, popBefore: number, events: WorldEvent[]): v
   const reachable = reachableIds(world);
   while (world.epoch > 0 && !shouldAdvanceEpoch({ ...world, epoch: world.epoch - 1 }, reachable)) {
     world.epoch -= 1;
+    closeEra(world, events);
     events.push(
       event(world, 'epoch', 1, `Civilizace se propadla zpět do epochy ${epochDef(world.epoch).name}.`, {
         epoch: world.epoch,
@@ -729,6 +957,32 @@ function checkCollapse(world: World, popBefore: number, events: WorldEvent[]): v
       }),
     );
     break; // nanejvýš jedna epocha zpět za tick
+  }
+}
+
+// ─────────────────────────────────────────── Lidé
+
+/**
+ * Nekrology. Kdo za sebou něco nechal, dostane zápis; ostatní projdou
+ * kronikou beze jména, stejně jako všichni, které si dějiny nezapamatovaly.
+ */
+function updateFigures(world: World, events: WorldEvent[]): void {
+  for (const figure of ageFigures(world)) {
+    const faction = world.factions.find((f) => f.id === figure.factionId);
+    const rng = rngFor(world.seed, world.tick, STREAM.figures, hashString(figure.id));
+    events.push(
+      event(world, 'figure_death', 0.55, necrology(rng, figure, faction?.name ?? null), {
+        figure: figure.id,
+        role: figure.role,
+        deeds: figure.deeds.length,
+        age: Math.round((figure.diedYear ?? 0) - figure.bornYear),
+      }),
+    );
+
+    // Do kapitoly se vejdou jen ti nejnovější — jinak by se z ohlédnutí
+    // stal seznam jmen.
+    world.era.figures.push(figure.name.nom);
+    if (world.era.figures.length > 4) world.era.figures.shift();
   }
 }
 
@@ -934,6 +1188,8 @@ export function tickWorld(prev: World): TickResult {
   maybeWar(world, events);
   recomputeDerived(world);
 
+  updateFigures(world, events);
+
   checkEpoch(world, events);
   checkCollapse(world, popBefore, events);
   checkEnding(world, events);
@@ -972,7 +1228,12 @@ export function genesisEvent(world: World): WorldEvent {
     text:
       (world.run > 1 ? `${world.run}. civilizace. ` : '') +
       `Na planetě ${world.planet.name} se v jeskyni u ${first?.name ?? 'bezejmenného místa'} probudilo ${Math.round(world.stats.population)} lidí. ` +
-      `Říkali si ${faction?.name.nom ?? 'nijak'}. Neuměli nic.`,
-    data: { planet: world.planet.name, population: world.stats.population },
+      `Říkali si ${faction?.name.nom ?? 'nijak'}. Neuměli nic. Krajina kolem: ${BIOME_LABEL[first?.biome ?? 'grassland']}.`,
+    context: contextOf(world),
+    data: {
+      planet: world.planet.name,
+      population: world.stats.population,
+      biome: first?.biome ?? null,
+    },
   };
 }

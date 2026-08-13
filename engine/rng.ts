@@ -46,6 +46,7 @@ export const STREAM = {
   collapse: 10,
   flavor: 11,
   predict: 12,
+  figures: 13,
 } as const;
 
 export type StreamId = (typeof STREAM)[keyof typeof STREAM];

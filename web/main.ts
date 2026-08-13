@@ -37,12 +37,15 @@ const MARKS: Record<string, string> = {
   disaster_aggregate: '▵',
   epoch: '■',
   faction_split: '⑂',
-  faction_end: '†',
+  // Kříž patří smrti člověka; konec celého společenství nese těžší značku.
+  faction_end: '‡',
   war: '⚔',
   settlement_founded: '·',
   settlement_lost: '×',
   climate: '❄',
   population: '·',
+  figure_death: '†',
+  chapter: '§',
   ending: '●',
 };
 

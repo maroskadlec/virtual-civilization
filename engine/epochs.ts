@@ -53,12 +53,26 @@ export function tickIndexAt(nowMs: number, genesisMs: number): number {
   return Math.max(0, Math.floor((nowMs - genesisMs) / TICK_REAL_MS));
 }
 
+/**
+ * Oddělovač tisíců.
+ *
+ * Schválně ručně, ne přes `toLocaleString`: text událostí se porovnává mezi
+ * serverem a prohlížečem a ty mohou mít jiné ICU, které oddělí tisíce jiným
+ * znakem. Rozdíl v jediné mezeře by rozešel kroniku spočítanou v Action
+ * s kronikou, kterou si dopočítá klient.
+ */
+function group(value: number): string {
+  return Math.round(value)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 /** Hloubka času před založením — tam se počítá ve statisících let. */
 export function formatDeepTime(year: number): string {
   const y = Math.round(year);
   if (y >= 1_000_000) return `${(y / 1_000_000).toFixed(2)} mil. let`;
-  if (y >= 10_000) return `${Math.round(y / 1000).toLocaleString('cs-CZ')} tis. let`;
-  return `${y.toLocaleString('cs-CZ')} let`;
+  if (y >= 10_000) return `${group(y / 1000)} tis. let`;
+  return `${group(y)} let`;
 }
 
 /**
@@ -70,5 +84,5 @@ export function formatDeepTime(year: number): string {
  */
 export function formatYear(year: number, foundingYear: number | null): string {
   if (foundingYear === null || year < foundingYear) return `${formatDeepTime(year)} stáří`;
-  return `rok ${Math.round(year - foundingYear).toLocaleString('cs-CZ')}`;
+  return `rok ${group(year - foundingYear)}`;
 }

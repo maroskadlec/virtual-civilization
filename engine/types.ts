@@ -196,6 +196,8 @@ export type EventKind =
   | 'settlement_lost'
   | 'climate'
   | 'population'
+  | 'figure_death'
+  | 'chapter'
   | 'ending';
 
 export type DisasterId =
@@ -210,6 +212,29 @@ export type DisasterId =
   | 'famine';
 
 /**
+ * Snímek okamžiku, ve kterém událost nastala.
+ *
+ * Bez něj je každý zápis osamocený a stejná povodeň zní stejně pro tlupu
+ * o čtyřiceti lidech i pro říši. Nese se u události proto, že později už se
+ * nedá zrekonstruovat — svět se mezitím pohnul dál.
+ */
+export interface EventContext {
+  epoch: number;
+  population: number;
+  settlements: number;
+  factions: number;
+  /** Nejsilnější tlak v tu chvíli, nebo null, když žádný nevyčnívá. */
+  pressure: PressureId | null;
+}
+
+/** Kolik to stálo lidí. Engine to počítal odjakživa, jen to zahazoval. */
+export interface Toll {
+  before: number;
+  after: number;
+  deaths: number;
+}
+
+/**
  * Jedna položka kroniky. `data` je strukturovaná pravda, `text` je vyprávění.
  * Pozdější LLM vrstva přepíše jen `text` — engine se nemění.
  */
@@ -222,7 +247,99 @@ export interface WorldEvent {
   /** Váha 0–1 pro filtrování ve feedu a velikost korálku na spirále. */
   weight: number;
   text: string;
+  context: EventContext;
+  /** Jen u událostí, které někoho stály život. */
+  toll?: Toll;
   data: Record<string, unknown>;
+}
+
+// ─────────────────────────────────────────── Pojmenovaní aktéři
+
+export type FigureRole = 'chieftain' | 'scholar' | 'general' | 'seer' | 'builder';
+
+/** Co po sobě člověk zanechal. Z těchhle položek se skládá nekrolog. */
+export interface FigureDeed {
+  kind: 'milestone' | 'war_won' | 'war_lost' | 'schism' | 'settlement';
+  /** Čitelný název — milník, osada, protivník. */
+  what: string;
+  year: number;
+}
+
+/**
+ * Jeden člověk, kterého si dějiny zapamatovaly.
+ *
+ * Jména se objevují až od doby bronzové, a ne z rozmaru: v paleolitu pokrývá
+ * jeden tick čtyři tisíciletí, takže by se jednotlivec nedožil ani setiny
+ * ticku. Teprve když lidský život zabere aspoň několik ticků, má smysl ho
+ * sledovat — a je to zároveň doba, kdy se první jména objevují i ve
+ * skutečných záznamech.
+ */
+export interface Figure {
+  id: string;
+  /** Celé jméno i s funkcí a přídomkem: „náčelník Karnath Tichý". */
+  name: Declined;
+  /** Samotné rodné jméno — pro opakované zmínky, kde by funkce překážela. */
+  given: Declined;
+  gender: 'm' | 'f';
+  role: FigureRole;
+  factionId: string;
+  bornYear: number;
+  /** Kolika let se dožije. */
+  lifespan: number;
+  /** Rok úmrtí; dokud žije, null. */
+  diedYear: number | null;
+  deeds: FigureDeed[];
+}
+
+// ─────────────────────────────────────────── Historická paměť
+
+/** Bez počítadel nejde napsat „potřetí za dvě století". */
+export interface DisasterRecord {
+  count: number;
+  lastYear: number;
+  /**
+   * Nejhorší dosavadní zásah — jako PODÍL zasažené osady, ne jako počet mrtvých.
+   * Populace roste exponenciálně, takže v absolutních číslech je skoro každá
+   * další rána „nejhorší v dějinách" a to slovo ztratí význam.
+   */
+  worstShare: number;
+}
+
+export interface Memory {
+  disasters: Record<string, DisasterRecord>;
+  iceAges: number;
+  wars: number;
+  schisms: number;
+  collapses: number;
+  settlementsFounded: number;
+  settlementsLost: number;
+  /** Rok konce poslední války — mír se měří od něj. */
+  lastWarYear: number | null;
+  /** Nejdelší mír v dějinách, v letech. */
+  longestPeace: number;
+  /** Nejhorší jednorázový zásah v dějinách, jako podíl zasažené osady. */
+  worstShare: number;
+  totalDeaths: number;
+}
+
+/**
+ * Rozepsaná kapitola. Sbírá se celou epochu a uzavře se na jejím konci —
+ * teprve tehdy se dá o období napsat něco, co jednotlivé zápisy neunesou.
+ */
+export interface Era {
+  epoch: number;
+  startTick: number;
+  startYear: number;
+  startPopulation: number;
+  milestones: string[];
+  lostMilestones: number;
+  wars: number;
+  disasters: number;
+  deaths: number;
+  settlementsFounded: number;
+  settlementsLost: number;
+  /** Jména těch, kdo v epoše zemřeli a stálo to za zápis. */
+  figures: string[];
 }
 
 // ─────────────────────────────────────────── Svět
@@ -310,6 +427,10 @@ export interface World {
   climate: Climate;
   factions: Faction[];
   settlements: Settlement[];
+  /** Živí i nedávno zesnulí. Starší se prořezávají, aby stav nerostl donekonečna. */
+  figures: Figure[];
+  memory: Memory;
+  era: Era;
   tech: TechState;
   pressures: Pressures;
   stats: {
@@ -333,7 +454,7 @@ export interface World {
   /** Jméno zakládající frakce. Může zaniknout, ale do archivu patří. */
   firstFactionName: string;
   /** Počítadla pro generování stabilních ID. */
-  nextIds: { faction: number; settlement: number };
+  nextIds: { faction: number; settlement: number; figure: number };
 }
 
 /** Výsledek jednoho ticku: nový svět + co se v něm stalo. */

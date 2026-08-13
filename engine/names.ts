@@ -11,8 +11,12 @@
  * jen v apozici („v osadě Karnath"), takže se skloňovat nemusí.
  */
 
-import type { Declined } from './types.js';
+import type { Declined, FigureRole } from './types.js';
 import type { Rng } from './rng.js';
+
+/** Pořadí pádů ve všech tabulkách i v `Declined`. */
+const CASES = ['nom', 'gen', 'dat', 'acc', 'loc', 'ins'] as const;
+type Forms = readonly [string, string, string, string, string, string];
 
 /** Podstatná jména — rod mužský životný, číslo množné. Pořadí: nom, gen, dat, acc, loc, ins. */
 const HEADS: readonly [string, string, string, string, string, string][] = [
@@ -171,6 +175,129 @@ export function placeName(rng: Rng, lang: Language, used: ReadonlySet<string>): 
     if (name.length >= 3 && !used.has(name)) return name;
   }
   return capitalize(`${rng.pick(lang.onsets)}${rng.pick(lang.nuclei)}${used.size}`);
+}
+
+// ─────────────────────────────────────────── Jména lidí
+
+/**
+ * Jednotlivec musí umět stát ve větě ve všech pádech — na rozdíl od osady,
+ * která se vejde do apozice („v osadě Karnath"). Tabulka jako u frakcí tu
+ * nepomůže, protože jmen vzniknou stovky a generují se za běhu.
+ *
+ * Řeší se to omezením generátoru: mužské jméno **musí** končit souhláskou
+ * a skloňuje se jako „pán", ženské **musí** končit na -a a skloňuje se jako
+ * „žena". Obojí je bezvýjimečně pravidelné, takže se tvary spočítají.
+ */
+
+const MALE_CODAS = ['n', 'r', 'l', 's', 'm', 'th', 'k', 'rn', 'st', 'nd', 'd', 't'];
+
+/**
+ * Ženská zakončení. Chybí tu k, g, h, ch a r schválně: ve 3. a 6. pádě se
+ * koncová souhláska měkčí („matka → matce", „sestra → sestře") a u těchhle
+ * by generátor musel hádat. Zbylá měkčí jednoznačně.
+ */
+const FEMALE_ENDINGS = ['na', 'la', 'ma', 'sa', 'va', 'ta', 'da', 'za', 'ba', 'pa'];
+
+const SOFTEN: Record<string, string> = {
+  n: 'ně', t: 'tě', d: 'dě', m: 'mě', b: 'bě', p: 'pě', v: 'vě',
+  s: 'se', z: 'ze', l: 'le',
+};
+
+function declineMale(name: string): Declined {
+  return {
+    nom: name,
+    gen: `${name}a`,
+    dat: `${name}ovi`,
+    acc: `${name}a`,
+    loc: `${name}ovi`,
+    ins: `${name}em`,
+  };
+}
+
+function declineFemale(name: string): Declined {
+  const stem = name.slice(0, -1);
+  const last = stem.slice(-1);
+  const soft = stem.slice(0, -1) + (SOFTEN[last] ?? `${last}e`);
+  return { nom: name, gen: `${stem}y`, dat: soft, acc: `${stem}u`, loc: soft, ins: `${stem}ou` };
+}
+
+/** Tvrdá přídavná jména se skloňují úplně pravidelně — stačí kmen. */
+const EPITHET_STEMS: readonly string[] = [
+  'Tich', 'Star', 'Mlčenliv', 'Bystr', 'Rud', 'Železn', 'Jednook', 'Kulhav',
+  'Nesmiřiteln', 'Trpěliv', 'Chladn', 'Šedovlas', 'Neúnavn', 'Zádumčiv',
+  'Sveřep', 'Laskav', 'Krut', 'Opatrn', 'Zbrkl', 'Tvrdohlav', 'Bezesn',
+  'Vytrval', 'Prohnan', 'Zdrženliv', 'Neklidn', 'Bled', 'Vysok', 'Slep',
+  'Hluch', 'Divok', 'Smutn', 'Velik', 'Přísn', 'Štědr', 'Mladš',
+];
+
+const HARD_M: Forms = ['ý', 'ého', 'ému', 'ého', 'ém', 'ým'];
+const HARD_F: Forms = ['á', 'é', 'é', 'ou', 'é', 'ou'];
+
+/** Funkce se skloňují nepravidelně, takže je nesou tabulky. */
+const ROLE_FORMS: Record<FigureRole, { m: Forms; f: Forms }> = {
+  chieftain: {
+    m: ['náčelník', 'náčelníka', 'náčelníkovi', 'náčelníka', 'náčelníkovi', 'náčelníkem'],
+    f: ['náčelnice', 'náčelnice', 'náčelnici', 'náčelnici', 'náčelnici', 'náčelnicí'],
+  },
+  scholar: {
+    m: ['učenec', 'učence', 'učenci', 'učence', 'učenci', 'učencem'],
+    f: ['učenka', 'učenky', 'učence', 'učenku', 'učence', 'učenkou'],
+  },
+  general: {
+    m: ['vojevůdce', 'vojevůdce', 'vojevůdci', 'vojevůdce', 'vojevůdci', 'vojevůdcem'],
+    f: ['vojevůdkyně', 'vojevůdkyně', 'vojevůdkyni', 'vojevůdkyni', 'vojevůdkyni', 'vojevůdkyní'],
+  },
+  seer: {
+    m: ['věštec', 'věštce', 'věštci', 'věštce', 'věštci', 'věštcem'],
+    f: ['věštkyně', 'věštkyně', 'věštkyni', 'věštkyni', 'věštkyni', 'věštkyní'],
+  },
+  builder: {
+    m: ['stavitel', 'stavitele', 'staviteli', 'stavitele', 'staviteli', 'stavitelem'],
+    f: ['stavitelka', 'stavitelky', 'stavitelce', 'stavitelku', 'stavitelce', 'stavitelkou'],
+  },
+};
+
+export const ROLE_LABEL: Record<FigureRole, { m: string; f: string }> = {
+  chieftain: { m: 'náčelník', f: 'náčelnice' },
+  scholar: { m: 'učenec', f: 'učenka' },
+  general: { m: 'vojevůdce', f: 'vojevůdkyně' },
+  seer: { m: 'věštec', f: 'věštkyně' },
+  builder: { m: 'stavitel', f: 'stavitelka' },
+};
+
+/**
+ * Jméno člověka ve dvou podobách: celé i s funkcí a přídomkem („náčelník
+ * Karnath Tichý") a samotné rodné jméno pro opakované zmínky, kde by funkce
+ * překážela. Fonémy se berou z jazyka frakce, takže lidé znějí příbuzně
+ * s osadami, ve kterých žijí.
+ */
+export function personName(
+  rng: Rng,
+  lang: Language,
+  gender: 'm' | 'f',
+  role: FigureRole,
+  used: ReadonlySet<string>,
+): { name: Declined; given: Declined } {
+  let raw = '';
+  for (let attempt = 0; attempt < 40; attempt++) {
+    let stem = '';
+    const syllables = 1 + rng.int(2);
+    for (let i = 0; i < syllables; i++) stem += rng.pick(lang.onsets) + rng.pick(lang.nuclei);
+    raw = capitalize(stem + (gender === 'm' ? rng.pick(MALE_CODAS) : rng.pick(FEMALE_ENDINGS)));
+    if (raw.length >= 4 && !used.has(raw)) break;
+  }
+
+  const given = gender === 'm' ? declineMale(raw) : declineFemale(raw);
+  const roleForms = ROLE_FORMS[role][gender];
+  const adjective = gender === 'm' ? HARD_M : HARD_F;
+  const epithet = rng.chance(0.55) ? rng.pick(EPITHET_STEMS) : null;
+
+  const name = {} as Declined;
+  CASES.forEach((c, i) => {
+    name[c] = `${roleForms[i]} ${given[c]}${epithet ? ` ${epithet}${adjective[i]}` : ''}`;
+  });
+
+  return { name, given };
 }
 
 const PLANET_PREFIX = ['An', 'Vor', 'Kes', 'Thal', 'Mir', 'Ol', 'Sar', 'Ur', 'Ael', 'Nym', 'Tor', 'Ish'];
