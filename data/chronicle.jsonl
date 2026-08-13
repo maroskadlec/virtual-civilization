@@ -2,3 +2,4 @@
 {"run":1,"tick":6,"year":24000,"kind":"settlement_founded","weight":0.8,"text":"Tlupa opustila poušť a vydala se hledat lepší krajinu. Usadila se ve stepi.","data":{"settlement":"Vauzovol","biome":"grassland","migration":true}}
 {"run":1,"tick":18,"year":72000,"kind":"climate","weight":0.5,"text":"Sníh v horách přestal tát a rok co rok ho přibývalo.","data":{"onset":true}}
 {"run":1,"tick":30,"year":120000,"kind":"climate","weight":0.5,"text":"Led ustoupil. Pod ním se objevila země, kterou nikdo nepamatoval.","data":{"onset":false}}
+{"run":1,"tick":59,"year":236000,"kind":"climate","weight":0.5,"text":"Moře ustoupilo od břehů a mezi pevninami se otevřely suché mosty.","context":{"epoch":0,"population":57,"settlements":1,"factions":1,"pressure":"crowding"},"data":{"onset":true,"nth":1,"temperature":-5.05,"iceCoverage":0.555}}
