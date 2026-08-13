@@ -438,6 +438,45 @@ a:hover {
   cursor: grabbing;
 }
 
+/* Ovládání přiblížení u souhvězdí.
+   Na dotykovém displeji je to jediná objevitelná cesta k zoomu — kolečko myši
+   tam není a gesto dvěma prsty nikde nestojí napsané. Cíle jsou 44px velké,
+   aby se na ně dalo trefit palcem. */
+.zoomers {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.zoomers button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: rgba(7, 9, 12, 0.72);
+  border: 1px solid var(--rule);
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.zoomers button:hover,
+.zoomers button:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+.zoomers button:active {
+  background: rgba(232, 220, 196, 0.1);
+}
+
 /* Popisek u kurzoru — jediný prvek, který smí mít vlastní podklad. */
 .tip {
   position: absolute;
