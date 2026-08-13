@@ -1,3 +1,4 @@
 {"run":1,"tick":0,"year":0,"kind":"genesis","weight":1,"text":"Na planetě Urnotar se v jeskyni u Vauzovol probudilo 35 lidí. Říkali si Zaklínači soumraku. Neuměli nic.","data":{"planet":"Urnotar","population":35}}
 {"run":1,"tick":6,"year":24000,"kind":"settlement_founded","weight":0.8,"text":"Tlupa opustila poušť a vydala se hledat lepší krajinu. Usadila se ve stepi.","data":{"settlement":"Vauzovol","biome":"grassland","migration":true}}
 {"run":1,"tick":18,"year":72000,"kind":"climate","weight":0.5,"text":"Sníh v horách přestal tát a rok co rok ho přibývalo.","data":{"onset":true}}
+{"run":1,"tick":30,"year":120000,"kind":"climate","weight":0.5,"text":"Led ustoupil. Pod ním se objevila země, kterou nikdo nepamatoval.","data":{"onset":false}}
