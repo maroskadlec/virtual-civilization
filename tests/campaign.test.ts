@@ -130,6 +130,29 @@ describe('kampaň', () => {
     expect(genesisEvents.length).toBe(campaign.archive.length);
   });
 
+  it('starší checkpoint bez novějších polí se načte s výchozími hodnotami', () => {
+    // Když runner spadne na chybějícím poli, checkpoint už nikdy nepřepíše —
+    // a web na něm staví taky. Rozbilo by to nasazení natrvalo.
+    const campaign = createCampaign(1, 0);
+    advanceCampaign(campaign, 50);
+
+    const raw = JSON.parse(serializeCampaign(campaign)) as Record<string, unknown>;
+    delete raw.predictions;
+    delete raw.scoreboard;
+    delete raw.version;
+
+    const restored = deserializeCampaign(JSON.stringify(raw));
+    expect(restored.predictions).toEqual([]);
+    expect(restored.scoreboard.buckets.length).toBe(10);
+    expect(restored.globalTick).toBe(50);
+    // A musí jít rovnou dál, ne jen načíst.
+    expect(() => advanceCampaign(restored, 60)).not.toThrow();
+  });
+
+  it('checkpoint bez světa se odmítne', () => {
+    expect(() => deserializeCampaign('{"genesisMs":0}')).toThrow(/neobsahuje svět/);
+  });
+
   it('checkpoint z budoucí verze formátu se odmítne, ne tiše načte', () => {
     const campaign = createCampaign(1, 0);
     const raw = JSON.parse(serializeCampaign(campaign)) as Campaign;

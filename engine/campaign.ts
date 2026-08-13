@@ -21,6 +21,8 @@
 import { TICK_REAL_MS, tickIndexAt } from './epochs.js';
 import { genesisEvent, tickWorld } from './tick.js';
 import { createWorld, nextRun, summarizeRun } from './world.js';
+import { claimHolds, emptyScoreboard, recordOutcome } from './predict.js';
+import type { Prediction, Scoreboard } from './predict.js';
 import type { RunSummary, World, WorldEvent } from './types.js';
 
 /** Verze formátu checkpointu. Zvyšuje se při nekompatibilní změně stavu světa. */
@@ -35,7 +37,14 @@ export interface Campaign {
   globalTick: number;
   world: World;
   archive: RunSummary[];
+  /** Aktivní i nedávno vyhodnocené předpovědi. */
+  predictions: Prediction[];
+  /** Průběžná úspěšnost — Brier a kalibrační koše. */
+  scoreboard: Scoreboard;
 }
+
+/** Kolik vyhodnocených předpovědí se drží v checkpointu. Statistika je v scoreboardu. */
+const RESOLVED_KEPT = 40;
 
 export function createCampaign(startSeed: number, genesisMs: number): Campaign {
   return {
@@ -45,6 +54,8 @@ export function createCampaign(startSeed: number, genesisMs: number): Campaign {
     globalTick: 0,
     world: createWorld(startSeed),
     archive: [],
+    predictions: [],
+    scoreboard: emptyScoreboard(),
   };
 }
 
@@ -84,6 +95,8 @@ export function advanceCampaign(campaign: Campaign, targetTick: number): Advance
     }
 
     if (campaign.world.ending) {
+      // Předpovědi o zaniklé civilizaci se uzavřou hned — dozrát už nemají kde.
+      resolvePredictions(campaign, true);
       campaign.archive.push(summarizeRun(campaign.world));
       campaign.world = nextRun(campaign.world);
       events.push(genesisEvent(campaign.world));
@@ -99,9 +112,41 @@ export function advanceCampaign(campaign: Campaign, targetTick: number): Advance
     events.push(...result.events);
     campaign.globalTick += 1;
     ticks += 1;
+
+    trackPredictions(campaign, result.events);
+    resolvePredictions(campaign, false);
   }
 
   return { events, ticks, truncated: false };
+}
+
+/**
+ * Sleduje, jestli už předpovídaná věc nastala.
+ *
+ * Právě proto jsou tvrzení monotónní: stačí jeden příznak a není potřeba se
+ * zpětně doptávat do historie, která už dávno odtekla do archivu.
+ */
+function trackPredictions(campaign: Campaign, events: readonly WorldEvent[]): void {
+  for (const prediction of campaign.predictions) {
+    if (prediction.outcome !== 'pending' || prediction.happened) continue;
+    if (prediction.run !== campaign.world.run) continue;
+    if (claimHolds(prediction.claim, campaign.world, events)) prediction.happened = true;
+  }
+}
+
+/** Uzavře předpovědi, kterým vypršel čas — nebo všechny, když civilizace končí. */
+function resolvePredictions(campaign: Campaign, closeAll: boolean): void {
+  for (const prediction of campaign.predictions) {
+    if (prediction.outcome !== 'pending') continue;
+    if (!closeAll && campaign.globalTick < prediction.resolveAtTick) continue;
+
+    prediction.outcome = prediction.happened ? 'hit' : 'miss';
+    recordOutcome(campaign.scoreboard, prediction);
+  }
+
+  const pending = campaign.predictions.filter((p) => p.outcome === 'pending');
+  const resolved = campaign.predictions.filter((p) => p.outcome !== 'pending');
+  campaign.predictions = [...resolved.slice(-RESOLVED_KEPT), ...pending];
 }
 
 /** Kampaň dopočítaná na aktuální čas. */
@@ -123,17 +168,43 @@ export function serializeCampaign(campaign: Campaign): string {
 }
 
 /**
- * Načte checkpoint. Vyšší verzi formátu odmítne — je lepší spadnout hlasitě
- * než tiše servírovat rozpadlý svět.
+ * Načte checkpoint.
+ *
+ * Vyšší verzi formátu odmítne — je lepší spadnout hlasitě než tiše servírovat
+ * rozpadlý svět. Starší checkpoint ale musí projít: pole přidaná pozdějšími
+ * verzemi se doplní výchozími hodnotami.
+ *
+ * Není to kosmetika. Když runner spadne na chybějícím poli, checkpoint už
+ * nikdy nepřepíše — a protože na tomtéž souboru staví i klient, zůstane web
+ * rozbitý natrvalo. Přesně to se stalo při zavádění předpovědí.
  */
 export function deserializeCampaign(json: string): Campaign {
-  const parsed = JSON.parse(json) as Campaign;
-  if (parsed.version > CAMPAIGN_FORMAT_VERSION) {
+  const parsed = JSON.parse(json) as Partial<Campaign>;
+  const version = parsed.version ?? 0;
+
+  if (version > CAMPAIGN_FORMAT_VERSION) {
     throw new Error(
-      `Checkpoint má formát verze ${parsed.version}, tenhle engine umí nejvýš ${CAMPAIGN_FORMAT_VERSION}.`,
+      `Checkpoint má formát verze ${version}, tenhle engine umí nejvýš ${CAMPAIGN_FORMAT_VERSION}.`,
     );
   }
-  return parsed;
+  if (!parsed.world || typeof parsed.genesisMs !== 'number') {
+    throw new Error('Checkpoint neobsahuje svět ani okamžik vzniku.');
+  }
+
+  const scoreboard = parsed.scoreboard;
+  return {
+    version: CAMPAIGN_FORMAT_VERSION,
+    genesisMs: parsed.genesisMs,
+    startSeed: parsed.startSeed ?? 0,
+    globalTick: parsed.globalTick ?? 0,
+    world: parsed.world,
+    archive: parsed.archive ?? [],
+    predictions: parsed.predictions ?? [],
+    scoreboard:
+      scoreboard && Array.isArray(scoreboard.buckets) && scoreboard.buckets.length === 10
+        ? scoreboard
+        : emptyScoreboard(),
+  };
 }
 
 /**

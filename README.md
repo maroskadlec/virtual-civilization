@@ -16,8 +16,9 @@ Inspirací byl [michalstrnadel/lili-octopus](https://github.com/michalstrnadel/l
 
 ## Stav
 
-Hotové jsou fáze **M1 až M4** — deterministický engine s úplným obsahem,
-kronika v terminálu a **běžící web se třemi pohledy**.
+Hotové jsou fáze **M1 až M5** — deterministický engine s úplným obsahem,
+kronika v terminálu, **běžící web se třemi pohledy** a předpovědi, které se
+samy zpětně vyhodnocují.
 
 **→ [maroskadlec.github.io/virtual-civilization](https://maroskadlec.github.io/virtual-civilization/)**
 
@@ -163,6 +164,36 @@ odsimulovat civilizaci rovnou v prohlížeči:
 Genesis se posune do minulosti přesně o zadaný počet ticků, takže ukázka sedí
 na skutečné hodiny stejně jako ostrý provoz. V hlavičce se pak zobrazí výrazné
 označení, aby si to nikdo nespletl s živou civilizací.
+
+## Předpovědi
+
+Žádná věštba ani ručně psaná pravidla: z aktuálního stavu se pustí stovka kopií
+téhož světa dopředu a spočítá se, v kolika z nich daná věc nastala. Když se
+v 68 kopiích ze sta objeví metalurgie, je to předpověď na 68 %.
+
+Větvení náhody plyne přímo z architektury — engine je čistá funkce
+`(seed, tick, stream)`, takže stačí kopii přepsat odvozený seed. Planeta
+i dosavadní stav zůstanou, ale všechny hody dopadnou jinak.
+
+Cestou vyšlo najevo, že **načasování milníků je skoro deterministické** —
+náhoda v téhle simulaci žije ve válkách, katastrofách a rozkolech, ne ve
+výzkumu. Při pevném horizontu proto vycházela skoro všechna tvrzení na nulu
+nebo na jistotu a nebylo co zveřejnit. Každý rollout si teď pamatuje, ve kterém
+kroku tvrzení poprvé nastalo, takže se z jednoho průchodu odečte pravděpodobnost
+pro libovolnou lhůtu — a každé tvrzení si vybere tu, ve které je nejnapínavější.
+
+Vyhodnocení je bez výmluv. Tvrzení jsou monotónní („stane se to do…"), takže
+stačí jeden příznak aktualizovaný každý tick. Když civilizace zanikne dřív, než
+předpověď dozraje, uzavře se rovnou — nesplněné tvrzení je minutí, ne
+omluvitelná okolnost. Předpověď měla riziko zániku zahrnout.
+
+Web ukazuje **Brierovo skóre** (nula je dokonalost, 0,25 je hod mincí)
+a hlavně **kalibraci**: z tvrzení, kterým dala simulace 70 %, se má splnit
+zhruba sedm z deseti. Bez toho by stačilo předpovídat samé jistoty
+a tvářit se neomylně.
+
+Monte Carlo stojí několik sekund, takže běží výhradně v Action; klient výsledek
+jen čte.
 
 ## Nasazení
 

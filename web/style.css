@@ -406,3 +406,125 @@ a:hover {
   text-transform: uppercase;
   vertical-align: 2px;
 }
+
+/* ─────────────────────────────── Předpovědi */
+
+.forecast {
+  padding: 30px 0 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.forecast h2,
+.forecast h3 {
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.forecast h3 {
+  margin-top: 30px;
+}
+
+.forecast-row {
+  display: grid;
+  grid-template-columns: 44px 84px minmax(0, 1fr);
+  gap: 0 14px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.forecast-p {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* Pravděpodobnost jako proužek — rychlejší na přečtení než číslo samotné. */
+.forecast-bar {
+  height: 3px;
+  background: var(--rule);
+  position: relative;
+}
+
+.forecast-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ink-dim);
+}
+
+.forecast-claim {
+  font-size: 15px;
+  max-width: var(--measure);
+}
+
+.forecast-row.hit .forecast-p { color: var(--milestone); }
+.forecast-row.miss .forecast-p { color: var(--ink-faint); }
+.forecast-row.hit .forecast-bar span { background: var(--milestone); }
+.forecast-row.miss .forecast-bar span { background: #3a3f47; }
+.forecast-row.miss .forecast-claim { color: var(--ink-faint); }
+
+.forecast-mark {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.scoreboard {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  line-height: 1.9;
+}
+
+.scoreboard b {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.calibration {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 74px 120px minmax(0, 1fr);
+  gap: 3px 12px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  max-width: 460px;
+}
+
+.calibration i {
+  font-style: normal;
+  height: 3px;
+  background: var(--rule);
+  position: relative;
+}
+
+.calibration i span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--epoch);
+}
+
+.forecast-empty {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 760px) {
+  .forecast-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 2px 12px;
+  }
+  .forecast-bar { display: none; }
+  .calibration { grid-template-columns: 70px 1fr; }
+  .calibration i { display: none; }
+}

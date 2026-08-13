@@ -16,6 +16,8 @@ import {
 import type { Campaign } from '../engine/campaign.js';
 import { epochDef, formatYear, TICK_REAL_MS } from '../engine/epochs.js';
 import { MILESTONES } from '../engine/milestones.data.js';
+import { brierScore, forecast, selectPredictions } from '../engine/predict.js';
+import type { Prediction } from '../engine/predict.js';
 import type { WorldEvent } from '../engine/types.js';
 import { drawDisc } from './views/disc.js';
 import { drawSpiral, spiralHitTest } from './views/spiral.js';
@@ -166,6 +168,80 @@ function renderChronicle(events: WorldEvent[], campaign: Campaign, lastSeenTick:
   el('chronicle').innerHTML = html;
 }
 
+// ─────────────────────────────────────────── Předpovědi
+
+function forecastRow(prediction: Prediction): string {
+  const percent = Math.round(prediction.probability * 100);
+  const mark =
+    prediction.outcome === 'hit' ? '✓' : prediction.outcome === 'miss' ? '✗' : '';
+  return `
+    <div class="forecast-row ${prediction.outcome}">
+      <div class="forecast-p">${mark ? `<span class="forecast-mark">${mark}</span> ` : ''}${percent} %</div>
+      <div class="forecast-bar"><span style="width:${percent}%"></span></div>
+      <div class="forecast-claim">${escapeHtml(prediction.text)}</div>
+    </div>`;
+}
+
+/**
+ * Kalibrace je to podstatné, ne úspěšnost.
+ *
+ * Předpověď na 70 % se má splnit zhruba v sedmi případech z deseti — a když
+ * ano, je poctivá, i kdyby se „mýlila" v každé třetí. Bez tohohle pohledu by
+ * stačilo předpovídat samé jistoty a tvářit se neomylně.
+ */
+function renderForecast(campaign: Campaign): void {
+  const section = el('forecast');
+  const pending = campaign.predictions.filter((p) => p.outcome === 'pending');
+  const resolved = campaign.predictions.filter((p) => p.outcome !== 'pending').slice(-6).reverse();
+  const board = campaign.scoreboard;
+
+  if (pending.length === 0 && resolved.length === 0) {
+    section.hidden = false;
+    section.innerHTML =
+      '<h2>předpovědi</h2><p class="forecast-empty">První předpovědi vzniknou po prvním dni běhu.</p>';
+    return;
+  }
+
+  let html = '<h2>předpovědi</h2>';
+  html += pending.length > 0
+    ? pending.map(forecastRow).join('')
+    : '<p class="forecast-empty">Právě teď se nic nedá říct s rozumnou nejistotou.</p>';
+
+  if (resolved.length > 0) {
+    html += '<h3>jak to dopadlo</h3>' + resolved.map(forecastRow).join('');
+  }
+
+  if (board.resolved > 0) {
+    const brier = brierScore(board);
+    const accuracy = Math.round((board.hits / board.resolved) * 100);
+    html += `<h3>úspěšnost</h3><div class="scoreboard">
+      Brierovo skóre <b>${brier === null ? '—' : brier.toFixed(3)}</b>
+      · vyhodnoceno <b>${board.resolved}</b>
+      · trefeno <b>${accuracy} %</b>
+      <br><span>Nula je dokonalost, 0,25 je hod mincí.</span>
+    </div>`;
+
+    const rows = board.buckets
+      .map((bucket, index) => ({ bucket, index }))
+      .filter(({ bucket }) => bucket.total > 0);
+
+    if (rows.length > 0) {
+      html += '<div class="calibration">';
+      for (const { bucket, index } of rows) {
+        const actual = Math.round((bucket.hits / bucket.total) * 100);
+        html += `
+          <span>řekli ${index * 10}–${index * 10 + 10} %</span>
+          <i><span style="width:${actual}%"></span></i>
+          <span>nastalo ${actual} % · ${bucket.total}×</span>`;
+      }
+      html += '</div>';
+    }
+  }
+
+  section.hidden = false;
+  section.innerHTML = html;
+}
+
 // ─────────────────────────────────────────── Jeviště
 
 type ViewId = 'disc' | 'spiral' | 'constellation';
@@ -229,13 +305,16 @@ function hideTip(): void {
 }
 
 async function main(): Promise<void> {
-  const campaign = await loadCampaign();
-  if (!campaign) return;
+  const loaded = await loadCampaign();
+  if (!loaded) return;
+  const { campaign } = loaded;
 
   // Feed si vystačí s posledními zápisy, spirála ale potřebuje celý běh.
   // Plnou kroniku proto stahujeme až ve chvíli, kdy se na spirálu někdo podívá.
-  const history = (await fetchJson<WorldEvent[]>('./recent.json')) ?? [];
-  let computed = catchUp(campaign);
+  // Ukázka si nese vlastní zápisy — stahovat kroniku ostrého provozu by do ní
+  // namíchalo dějiny úplně jiné planety.
+  const history = loaded.events ?? (await fetchJson<WorldEvent[]>('./recent.json')) ?? [];
+  let computed = loaded.events ? [] : catchUp(campaign);
   let fullChronicle: WorldEvent[] | null = null;
 
   const feedEvents = (): WorldEvent[] => [...history, ...computed];
@@ -245,7 +324,7 @@ async function main(): Promise<void> {
   let events = feedEvents();
 
   const ensureFullChronicle = async (): Promise<void> => {
-    if (fullChronicle !== null) return;
+    if (fullChronicle !== null || isDemo) return;
     fullChronicle = [];
     try {
       const response = await fetch('./chronicle.jsonl', { cache: 'no-cache' });
@@ -265,6 +344,7 @@ async function main(): Promise<void> {
 
   renderHeader(campaign);
   renderInstruments(campaign, Date.now());
+  renderForecast(campaign);
   renderChronicle(events, campaign, Number.isFinite(lastSeen) ? lastSeen : null);
   localStorage.setItem(LAST_SEEN_KEY, String(campaign.world.tick));
 
@@ -339,6 +419,7 @@ async function main(): Promise<void> {
     computed = [...computed, ...step.events];
     events = feedEvents();
     renderHeader(campaign);
+    renderForecast(campaign);
     renderChronicle(events, campaign, null);
     if (activeView === 'constellation') selectView('constellation');
   }, Math.min(TICK_REAL_MS, 30_000));
@@ -366,7 +447,13 @@ function catchUp(campaign: Campaign): WorldEvent[] {
  * odsimuluje rovnou v prohlížeči, což se hodí při vývoji vizualizací —
  * ta živá je zpravidla teprve na začátku a není na ní co kreslit.
  */
-async function loadCampaign(): Promise<Campaign | null> {
+interface LoadedCampaign {
+  campaign: Campaign;
+  /** Vlastní zápisy ukázky. U ostrého provozu null — kronika se stahuje. */
+  events: WorldEvent[] | null;
+}
+
+async function loadCampaign(): Promise<LoadedCampaign | null> {
   const params = new URLSearchParams(location.search);
   const demo = params.get('demo');
 
@@ -379,7 +466,20 @@ async function loadCampaign(): Promise<Campaign | null> {
     isDemo = true;
     el('lede').textContent = `Ukázka: simuluji ${ticks} ticků…`;
     await new Promise((resolve) => setTimeout(resolve, 20));
-    return createCampaign(seed, Date.now() - ticks * TICK_REAL_MS);
+    const campaign = createCampaign(seed, Date.now() - ticks * TICK_REAL_MS);
+    const events = catchUp(campaign);
+
+    // V ostrém provozu počítá Monte Carlo výhradně Action; tady se pustí
+    // v okleštěné podobě, aby bylo co ukázat. Vyhodnocené předpovědi ukázka
+    // mít nemůže — ty vznikají až během skutečného běhu.
+    el('lede').textContent = 'Ukázka: počítám předpovědi…';
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const raw = forecast(campaign.world, campaign.globalTick, {
+      rollouts: 40,
+      horizons: [96, 240, 480],
+    });
+    campaign.predictions = selectPredictions(raw, campaign.globalTick, campaign.world.run);
+    return { campaign, events };
   }
 
   const raw = await fetchJson<unknown>('./world.json');
@@ -389,7 +489,7 @@ async function loadCampaign(): Promise<Campaign | null> {
     el('chronicle').innerHTML = '';
     return null;
   }
-  return deserializeCampaign(JSON.stringify(raw));
+  return { campaign: deserializeCampaign(JSON.stringify(raw)), events: null };
 }
 
 void main();

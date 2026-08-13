@@ -27,6 +27,7 @@ import type { Campaign } from '../engine/campaign.js';
 import { genesisEvent } from '../engine/tick.js';
 import { epochDef, formatYear, TICK_REAL_MS } from '../engine/epochs.js';
 import { MILESTONES } from '../engine/milestones.data.js';
+import { brierScore, forecast, selectPredictions } from '../engine/predict.js';
 import type { WorldEvent } from '../engine/types.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,14 @@ const STATUS_FILE = join(DATA_DIR, 'status.json');
 
 /** Kolik posledních událostí se drží zvlášť, aby web nemusel stahovat celou kroniku. */
 const RECENT_LIMIT = 300;
+
+/**
+ * Jak často se staví nové předpovědi — jednou za reálný den.
+ *
+ * Monte Carlo stojí několik sekund, což je pro Action nic, ale pro prohlížeč
+ * moc. Proto se počítá jen tady a klient výsledek jen čte.
+ */
+const FORECAST_EVERY = 96;
 
 function flag(name: string): boolean {
   return process.argv.includes(`--${name}`);
@@ -122,6 +131,9 @@ interface Status {
   settlements: number;
   ended: string | null;
   archivedRuns: number;
+  predictionsPending: number;
+  predictionsResolved: number;
+  brier: number | null;
   /** Jednořádkové shrnutí — používá se jako zpráva commitu. */
   headline: string;
 }
@@ -151,8 +163,27 @@ function buildStatus(campaign: Campaign, nowMs: number): Status {
     settlements: w.settlements.length,
     ended: w.ending?.kind ?? null,
     archivedRuns: campaign.archive.length,
+    predictionsPending: campaign.predictions.filter((p) => p.outcome === 'pending').length,
+    predictionsResolved: campaign.scoreboard.resolved,
+    brier: brierScore(campaign.scoreboard),
     headline,
   };
+}
+
+/** Nové předpovědi, když je čas — a je co předpovídat. */
+function maybeForecast(campaign: Campaign): number {
+  if (campaign.world.ending) return 0;
+
+  const lastMadeAt = campaign.predictions.reduce(
+    (max, p) => Math.max(max, p.madeAtTick),
+    -Infinity,
+  );
+  if (Number.isFinite(lastMadeAt) && campaign.globalTick - lastMadeAt < FORECAST_EVERY) return 0;
+
+  const raw = forecast(campaign.world, campaign.globalTick);
+  const fresh = selectPredictions(raw, campaign.globalTick, campaign.world.run);
+  campaign.predictions = [...campaign.predictions, ...fresh];
+  return fresh.length;
 }
 
 function main(): void {
@@ -179,6 +210,15 @@ function main(): void {
 
   // U čerstvé kampaně patří do kroniky i věta o probuzení první tlupy.
   const events = fresh ? [genesisEvent(campaign.world), ...result.events] : result.events;
+
+  const forecasted = maybeForecast(campaign);
+  if (forecasted > 0) {
+    const brier = brierScore(campaign.scoreboard);
+    console.log(
+      `Nových předpovědí: ${forecasted}.` +
+        (brier === null ? '' : ` Dosavadní Brier ${brier.toFixed(3)} z ${campaign.scoreboard.resolved} vyhodnocených.`),
+    );
+  }
 
   const status = buildStatus(campaign, nowMs);
   console.log(
