@@ -58,6 +58,19 @@ jobs:
       - name: Posunout civilizaci na aktuální čas
         run: npm run sim
 
+      # Jediný krok, který volá jazykový model — a schválně až ZA simulací,
+      # aby jeho selhání nemohlo ohrozit zápis checkpointu. `continue-on-error`
+      # je tu proto, že chybějící vyprávění je stav, se kterým web počítá,
+      # kdežto neposunutá civilizace by byla skutečná porucha.
+      #
+      # Klíč nikdy neopustí tenhle běh: model volá server, klient čte hotový
+      # text z narration.json. Do sestaveného webu se klíč nemá jak dostat.
+      - name: Napsat, co se nedá spočítat
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npm run narrate
+
       - name: Commitnout kroniku
         run: |
           if git diff --quiet -- data && git diff --cached --quiet -- data; then

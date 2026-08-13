@@ -293,17 +293,46 @@ Nejdůležitější z nich ověřuje, že simulace přerušená v půlce, poslan
 a dopočítaná dá bit po bitu stejný stav jako souvislý výpočet. Na tom stojí celé
 budoucí nasazení: server commituje checkpoint, klient si od něj dopočítá zbytek.
 
+## Vyprávěcí vrstva (jazykový model)
+
+Model **smí přidávat, nikdy přepisovat**. To není opatrnost, ale nutnost:
+klient si dopočítává ticky za posledním checkpointem, takže kdyby model
+přepisoval zápisy kroniky, návštěvník by v 10:05 viděl jedno znění a v 10:35
+jiné znění téže události — podle toho, jestli mezitím doběhla Action.
+Nic → text je proti tomu neškodné.
+
+Jednotlivé zápisy proto píšou dál šablony nad bohatými daty: gramaticky
+zaručeně, deterministicky a zadarmo. Model dělá jen tři věci, které šablona
+nad jednou událostí nedokáže ani teoreticky:
+
+| co | jak často | proč zrovna tohle |
+|---|---|---|
+| **čtení planety** | jednou za civilizaci | Parametry planety jsou násobiče ceny objevů, takže z nich jde dopředu říct, kudy dějiny nepůjdou. Bez toho se alternativní historie stane potichu — civilizace objeví elektřinu před průmyslem a nikdo nepozná, že to bylo tím chybějícím uhlím. |
+| **epitaf** | jednou za zaniklou civilizaci | Nejbohatší vstup v projektu (stovky událostí za celý oblouk) a nejřidší událost. |
+| **denní shrnutí** | jednou za reálný den | Obsluhuje ten jediný způsob použití, kolem kterého je celý projekt postavený. |
+
+Vychází to na **30–40 volání měsíčně**, tedy hluboko pod dolar.
+
+Běží to jako **samostatný krok za** `npm run sim`, ne uvnitř něj — selhání
+modelu tak nemůže ohrozit zápis checkpointu, na kterém stojí celé nasazení.
+Krok má `continue-on-error`, protože chybějící vyprávění je stav, se kterým
+web počítá, kdežto neposunutá civilizace by byla skutečná porucha.
+
+Texty se ukládají do `data/narration.json` jako klíčovaný slovník, do kterého
+se jen přidává. Co jednou vznikne, se už negeneruje znovu — je to zároveň
+pojistka proti tomu, aby chyba v kódu prohnala modelem celý archiv.
+
+**Klíč nikdy neopustí Action.** Model volá server, klient čte hotový text.
+Do sestaveného webu se `@anthropic-ai/sdk` nedostane, protože ho importuje
+výhradně `tools/narrate-llm.ts`; ověřuje se to hledáním v `dist/`.
+
+```bash
+npm run narrate -- --dry-run    # vypíše prompty, nic nevolá
+npm run narrate                 # bez ANTHROPIC_API_KEY se tiše přeskočí
+```
+
+Bez klíče je web úplný — jen bez těchhle tří textů.
+
 ## Dál
 
-- **M6** — archiv minulých civilizací na webu
-
-LLM vrstva kroniky je **volitelná a záměrně úzká**. Jednotlivé zápisy píšou
-šablony nad bohatými daty: jsou gramaticky zaručené, deterministické a zadarmo.
-Model by u nich přidal jen sloh a obětoval determinismus. Co ale šablona nad
-jednou událostí nedokáže ani teoreticky, je syntéza napříč obdobím — a to je
-jediné místo, kam LLM patří: **ohlédnutí za érou**. Ta už v kronice jsou,
-zatím šablonová; model by přepisoval jen je. Takové zápisy jsou ze své povahy
-retrospektivní, píšou se jen o minulosti, která je vždycky commitnutá, takže
-se feed událostí nemá jak rozejít s tím, co si dopočítá klient.
-
-Bez API klíče je web úplný — jen bez těch ohlédnutí.
+- **M6** — archiv minulých civilizací (kostra hotová, plní se s prvním zánikem)

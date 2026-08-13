@@ -15,9 +15,11 @@
     "sim": "tsx tools/sim-runner.ts",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "narrate": "tsx tools/narrate-llm.ts"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
     "@eslint/js": "^9.39.5",
     "@types/node": "^22.10.2",
     "eslint": "^9.17.0",

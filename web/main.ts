@@ -18,7 +18,11 @@ import { epochDef, formatYear, TICK_REAL_MS } from '../engine/epochs.js';
 import { MILESTONES } from '../engine/milestones.data.js';
 import { brierScore, forecast, selectPredictions } from '../engine/predict.js';
 import type { Prediction } from '../engine/predict.js';
-import type { WorldEvent } from '../engine/types.js';
+import type { RunSummary, WorldEvent } from '../engine/types.js';
+// Smlouva o narration.json bydlí u generátoru, protože ten ji naplňuje.
+// Modul je bez závislostí a bez vedlejších efektů, takže se sem dá importovat.
+import { epitaphKey, latestDigest, parseNarration, planetKey } from '../tools/narration.js';
+import type { NarrationStore } from '../tools/narration.js';
 import { drawDisc } from './views/disc.js';
 import { drawSpiral, spiralHitTest } from './views/spiral.js';
 import { mountConstellation } from './views/constellation.js';
@@ -169,6 +173,86 @@ function renderChronicle(events: WorldEvent[], campaign: Campaign, lastSeenTick:
   }
 
   el('chronicle').innerHTML = html;
+}
+
+// ─────────────────────────────────────────── Vyprávěcí vrstva
+
+/**
+ * Texty od jazykového modelu.
+ *
+ * Celá vrstva je **přídavná**: když soubor chybí, klíč není nastavený nebo
+ * volání selhalo, tyhle bloky se prostě nezobrazí a stránka vypadá přesně jako
+ * předtím. Proto se tu nikde nečeká na data a nic se kvůli nim neblokuje.
+ */
+function proseHtml(text: string): string {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph.trim())}</p>`)
+    .join('');
+}
+
+function renderReading(store: NarrationStore, run: number): void {
+  const entry = store.entries[planetKey(run)];
+  const node = el('reading');
+  if (!entry) {
+    node.hidden = true;
+    return;
+  }
+  node.innerHTML = `<h2>Co tenhle svět bude chtít</h2>${proseHtml(entry.text)}`;
+  node.hidden = false;
+}
+
+function renderDigest(store: NarrationStore, run: number): void {
+  const entry = latestDigest(store, run);
+  const node = el('digest');
+  if (!entry) {
+    node.hidden = true;
+    return;
+  }
+  node.innerHTML = `<h2>Co jsi propásl</h2>${proseHtml(entry.text)}`;
+  node.hidden = false;
+}
+
+/**
+ * Minulé civilizace. Epitaf vzniká až ve chvíli, kdy je běh uzavřený
+ * a odložený do archivu — do té doby tu civilizace není co shrnout.
+ */
+const ENDING_LABEL: Record<string, string> = {
+  extinction: 'vyhynula',
+  stagnation: 'ustrnula',
+  self_destruction: 'zničila se sama',
+  transcendence: 'transcendovala',
+};
+
+function renderArchive(store: NarrationStore, archive: RunSummary[]): void {
+  const node = el('archive');
+  if (archive.length === 0) {
+    node.hidden = true;
+    return;
+  }
+
+  const cards = archive
+    .slice()
+    .reverse()
+    .map((run) => {
+      const epitaph = store.entries[epitaphKey(run.run)];
+      // „na planetě X" schválně — jména planet se negenerují skloňovaná,
+      // takže musí stát v apozici, stejně jako všude jinde v kronice.
+      const facts =
+        `${run.run}. civilizace na planetě ${run.planet} · ${ENDING_LABEL[run.ending] ?? run.ending} · ` +
+        `došla do epochy ${epochDef(run.epoch).name.toLowerCase()} · ` +
+        `${run.milestonesUnlocked} z ${MILESTONES.length} milníků · ` +
+        `nejvíc obyvatel ${formatCount(run.peakPopulation)}`;
+      return `<article class="past">
+        <h3>${escapeHtml(run.planet)}</h3>
+        <p class="past-facts">${escapeHtml(facts)}</p>
+        ${epitaph ? proseHtml(epitaph.text) : '<p class="past-facts">Epitaf se ještě nenapsal.</p>'}
+      </article>`;
+    })
+    .join('');
+
+  node.innerHTML = `<h2>Minulé civilizace</h2>${cards}`;
+  node.hidden = false;
 }
 
 // ─────────────────────────────────────────── Předpovědi
@@ -350,6 +434,15 @@ async function main(): Promise<void> {
   renderForecast(campaign);
   renderChronicle(events, campaign, Number.isFinite(lastSeen) ? lastSeen : null);
   localStorage.setItem(LAST_SEEN_KEY, String(campaign.world.tick));
+
+  // Vyprávění patří ostrému provozu — ukázka běží na jiné planetě, takže by
+  // do ní namíchalo čtení světa, který na obrazovce vůbec není.
+  if (!isDemo) {
+    const store = parseNarration(await fetchJson<unknown>('./narration.json'));
+    renderReading(store, campaign.world.run);
+    renderDigest(store, campaign.world.run);
+    renderArchive(store, campaign.archive);
+  }
 
   const canvas = el<HTMLCanvasElement>('stage-canvas');
   const svg = document.getElementById('stage-svg') as unknown as SVGSVGElement;

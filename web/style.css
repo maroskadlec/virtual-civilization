@@ -250,6 +250,77 @@ a:hover {
   background: var(--rule);
 }
 
+/* ─────────────────────────────── Vyprávěcí vrstva
+ *
+ * Tyhle bloky nepíše engine, ale jazykový model. Drží se proto vizuálně
+ * stranou od kroniky: mají vlastní nadpis přístrojovým písmem a text stojí
+ * v odsazeném sloupci. Čtenář má poznat, že tohle je výklad, ne záznam.
+ */
+
+.reading,
+.digest,
+.archive {
+  max-width: var(--measure);
+  padding: 26px 0 4px;
+}
+
+.reading {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 28px;
+}
+
+.archive {
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+}
+
+.reading h2,
+.digest h2,
+.archive h2 {
+  margin: 0 0 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.reading p,
+.digest p,
+.past p {
+  margin: 0 0 12px;
+  color: var(--ink-dim);
+}
+
+.reading p {
+  color: var(--ink);
+}
+
+.past {
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.past:first-of-type {
+  border-top: none;
+}
+
+.past h3 {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.past-facts {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink-faint);
+}
+
 .colophon {
   margin-top: 64px;
   padding-top: 24px;
