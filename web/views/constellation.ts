@@ -293,6 +293,24 @@ export function mountConstellation(svg: SVGSVGElement, world: World, tip: TipApi
   let lastY = 0;
   let travelled = 0;
 
+  /**
+   * Prst je nepřesný. Citlivá plocha hvězdy má v přiblížení kolem dvaceti
+   * pixelů, takže se při minutí zkusí i blízké okolí — jinak se na dotykovém
+   * displeji na malé milníky prostě nedá trefit.
+   */
+  const TAP_RING: readonly [number, number][] = [
+    [0, 0], [0, -13], [13, 0], [0, 13], [-13, 0],
+    [10, -10], [-10, -10], [10, 10], [-10, 10],
+  ];
+
+  const nodeAtPoint = (clientX: number, clientY: number): Element | null => {
+    for (const [dx, dy] of TAP_RING) {
+      const found = document.elementFromPoint(clientX + dx, clientY + dy)?.closest('.node');
+      if (found) return found;
+    }
+    return null;
+  };
+
   const showTipFor = (element: Element | null, clientX: number, clientY: number): void => {
     const data = element?.closest('.node')?.getAttribute('data-tip');
     if (!data) {
@@ -397,8 +415,20 @@ export function mountConstellation(svg: SVGSVGElement, world: World, tip: TipApi
     // co ta hvězda je. `elementFromPoint` proto, že cíl události je kvůli
     // zachycení ukazatele vždycky celé plátno.
     if (wasSingle && travelled < TAP_SLOP && e.pointerType !== 'mouse') {
-      showTipFor(document.elementFromPoint(e.clientX, e.clientY), e.clientX, e.clientY);
+      showTipFor(nodeAtPoint(e.clientX, e.clientY), e.clientX, e.clientY);
     }
+  };
+
+  /**
+   * Opuštění plátna schová popisek jen u myši.
+   *
+   * U doteku prohlížeč posílá `pointerleave` hned po `pointerup` — ukazatel
+   * přestal existovat, takže z plátna „odešel". Nepodmíněné schování proto
+   * zhaslo popisek ve stejném okamžiku, kdy ho ťuknutí rozsvítilo, a na mobilu
+   * jen bliknul. Popisek se u doteku zavírá ťuknutím vedle nebo posunem mapy.
+   */
+  const onLeave = (e: PointerEvent): void => {
+    if (e.pointerType === 'mouse') tip.hideTip();
   };
 
   const onCancel = (e: PointerEvent): void => {
@@ -418,7 +448,7 @@ export function mountConstellation(svg: SVGSVGElement, world: World, tip: TipApi
   svg.addEventListener('pointermove', onMove);
   svg.addEventListener('pointerup', onUp);
   svg.addEventListener('pointercancel', onCancel);
-  svg.addEventListener('pointerleave', tip.hideTip);
+  svg.addEventListener('pointerleave', onLeave);
   svg.addEventListener('wheel', onWheel, { passive: false });
 
   return {
@@ -427,7 +457,7 @@ export function mountConstellation(svg: SVGSVGElement, world: World, tip: TipApi
       svg.removeEventListener('pointermove', onMove);
       svg.removeEventListener('pointerup', onUp);
       svg.removeEventListener('pointercancel', onCancel);
-      svg.removeEventListener('pointerleave', tip.hideTip);
+      svg.removeEventListener('pointerleave', onLeave);
       svg.removeEventListener('wheel', onWheel);
       controls.remove();
       svg.innerHTML = '';
