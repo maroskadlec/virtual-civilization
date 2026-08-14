@@ -16,6 +16,14 @@
       "tick": 96,
       "model": "claude-opus-5",
       "createdAtMs": 1786654351674
+    },
+    "digest:194": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Za uplynulý úsek se civilizace neposunula. Stále jedna osada, jedna frakce, čtyřiatřicet obyvatel, žádný z milníků. Klima ale pracovalo proti ní. Ve 408 tisících letech se zima vrátila do obvyklých mezí a lesy postoupily zpět na sever. Pak přišel chlad v 560 tisících a znovu v 764 tisících — čtvrtý příchod ledu, pokaždé bez léta a bez konce, který by někdo počítal. Mezitím, v 612 tisících, stoupla hladina a pobřežní tábořiště zmizela pod vodou. To je jediná ztráta s trvalým následkem: osídlení se muselo obejít bez pobřeží.",
+      "tick": 194,
+      "model": "claude-opus-5",
+      "createdAtMs": 1786743102554
     }
   }
 }
