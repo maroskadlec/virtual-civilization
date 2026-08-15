@@ -1,14 +1,14 @@
 {
-  "updatedAtMs": 1786830648921,
-  "globalTick": 292,
-  "nextTickAtMs": 1786831539494,
+  "updatedAtMs": 1786832976893,
+  "globalTick": 294,
+  "nextTickAtMs": 1786833339494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 0,
   "epochName": "Úsvit",
-  "year": 1168000,
+  "year": 1176000,
   "foundingYear": null,
-  "population": 95.08126762551225,
+  "population": 41.14341893606612,
   "milestonesUnlocked": 3,
   "milestonesTotal": 161,
   "factions": 1,
@@ -18,5 +18,5 @@
   "predictionsPending": 11,
   "predictionsResolved": 1,
   "brier": 0.05289999999999999,
-  "headline": "tick 292 · civilizace 1 na Urnotar · Úsvit · 1.17 mil. let stáří · 95 obyvatel"
+  "headline": "tick 294 · civilizace 1 na Urnotar · Úsvit · 1.18 mil. let stáří · 41 obyvatel"
 }
