@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   brierScore,
   claimHolds,
+  claimKey,
   emptyScoreboard,
   forecast,
   probabilityWithin,
@@ -57,6 +58,26 @@ describe('Monte Carlo', () => {
     expect(a.map((p) => `${p.id}:${p.probability}`)).toEqual(
       b.map((p) => `${p.id}:${p.probability}`),
     );
+  });
+
+  it('na tvrzení s otevřenou sázkou se znovu nesází', () => {
+    // Předpovědi se staví každý den. Bez tohohle se na totéž tvrzení vsadilo
+    // znovu dřív, než doběhla stará sázka — panel se zaplnil čtyřmi řádky
+    // o tomtéž a jeden výsledek se pak do skóre započítal čtyřikrát.
+    const world = simulate(createWorld(11), 600).world;
+    const raw = forecast(world, 600, OPTIONS);
+
+    const first = selectPredictions(raw, 600, 1, OPTIONS);
+    expect(first.length).toBeGreaterThan(0);
+
+    const open = new Set(first.map((p) => claimKey(p.claim)));
+    const second = selectPredictions(raw, 700, 1, OPTIONS, 5, open);
+
+    for (const p of second) expect(open.has(claimKey(p.claim))).toBe(false);
+
+    // A když už běží sázka úplně na všechno, nová kolo prostě nic nepřidá.
+    const everything = new Set([...raw.keys()]);
+    expect(selectPredictions(raw, 800, 1, OPTIONS, 5, everything)).toEqual([]);
   });
 
   it('vybírají se tvrzení, která něco riskují', () => {

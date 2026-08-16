@@ -27,7 +27,13 @@ import type { Campaign } from '../engine/campaign.js';
 import { genesisEvent } from '../engine/tick.js';
 import { epochDef, formatYear, TICK_REAL_MS } from '../engine/epochs.js';
 import { MILESTONES } from '../engine/milestones.data.js';
-import { brierScore, forecast, selectPredictions } from '../engine/predict.js';
+import {
+  brierScore,
+  claimKey,
+  DEFAULT_FORECAST,
+  forecast,
+  selectPredictions,
+} from '../engine/predict.js';
 import type { WorldEvent } from '../engine/types.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -180,8 +186,20 @@ function maybeForecast(campaign: Campaign): number {
   );
   if (Number.isFinite(lastMadeAt) && campaign.globalTick - lastMadeAt < FORECAST_EVERY) return 0;
 
+  // Na co už běží otevřená sázka, se znovu nesází.
+  const open = new Set(
+    campaign.predictions.filter((p) => p.outcome === 'pending').map((p) => claimKey(p.claim)),
+  );
+
   const raw = forecast(campaign.world, campaign.globalTick);
-  const fresh = selectPredictions(raw, campaign.globalTick, campaign.world.run);
+  const fresh = selectPredictions(
+    raw,
+    campaign.globalTick,
+    campaign.world.run,
+    DEFAULT_FORECAST,
+    5,
+    open,
+  );
   campaign.predictions = [...campaign.predictions, ...fresh];
   return fresh.length;
 }

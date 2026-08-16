@@ -112,7 +112,8 @@ export function claimText(claim: Claim): string {
   }
 }
 
-function claimKey(claim: Claim): string {
+/** Stabilní označení tvrzení. Nese ho i `id` předpovědi za dvojtečkou. */
+export function claimKey(claim: Claim): string {
   switch (claim.type) {
     case 'milestone':
       return `milestone:${claim.id}`;
@@ -257,9 +258,19 @@ export function selectPredictions(
   run: number,
   options: ForecastOptions = DEFAULT_FORECAST,
   limit = 5,
+  /**
+   * Tvrzení, na která už běží otevřená sázka.
+   *
+   * Bez tohohle se každý den vsadilo znovu i na to, co ještě nedoběhlo, takže
+   * se na tomtéž tvrzení nakupily čtyři otevřené předpovědi s různými čísly.
+   * Vedle nepořádku v panelu to kazilo i skóre: jeden výsledek se pak započítal
+   * čtyřikrát a korelované sázky nafoukly vzorek. Jedna otevřená sázka na
+   * tvrzení stačí — nová se dá udělat, jakmile se ta stará vyhodnotí.
+   */
+  exclude: ReadonlySet<string> = new Set(),
 ): Prediction[] {
   // Pro každé tvrzení se vybere lhůta, ve které je nejblíž k padesáti procentům.
-  const best = [...raw.entries()].map(([key, entry]) => {
+  const best = [...raw.entries()].filter(([key]) => !exclude.has(key)).map(([key, entry]) => {
     let horizon = options.horizons[0] ?? 96;
     let probability = probabilityWithin(entry, horizon);
 
