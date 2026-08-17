@@ -40,6 +40,14 @@
       "tick": 386,
       "model": "claude-opus-5",
       "createdAtMs": 1786915643814
+    },
+    "digest:482": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Za uplynulé období se ustavil jediný vzorec: z Mlauvodraum odchází skupina osadníků do stepi, zakládá osadu a ta při nejbližším zlém období zaniká. Tak skončily Vodreith, Dymzaul i Zeimmloszóth — u posledního zemřelo 118 lidí, více než polovina. Pohromy se opakovaly v týchž kombinacích: desítky zemětřesení, sucha, mory, sopečné výbuchy, pády těles. Ledovce dvakrát přišly a dvakrát se rozpadly, hladina stoupla a pobřežní tábořiště zmizela. Jediným trvalým výdobytkem zůstává oštěp, získaný pod tlakem hladu. Nejnovější osada Dyzeis stojí ve stepi zatím necelých dvacet tisíc let.",
+      "tick": 482,
+      "model": "claude-opus-5",
+      "createdAtMs": 1787002347753
     }
   }
 }
