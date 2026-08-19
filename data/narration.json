@@ -56,6 +56,14 @@
       "tick": 578,
       "model": "claude-opus-5",
       "createdAtMs": 1787088666538
+    },
+    "digest:674": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Úsvit skončil oštěpem a organizovaným lovem — jedenáct milníků, 183 lidí. Neolit trval 528 let a spotřeboval je. Sýpky se vyprazdňovaly znovu a znovu, prameny vysychaly, půda se rozestupovala; z Mommodróm a Dauzeis odešly skupiny, které založily Vóvomleim a Mymlaumys. Rozhodly ale dva propady půdy: v roce 396 zahynulo v Dauzeis 77 lidí a osada zanikla, v roce 528 v Mommodróm 81 lidí a zanikla také. S nimi se ztratila znalost přístřešku. Civilizace klesla na 44 obyvatel a spadla zpět do Úsvitu. Mymlaumys pak dolomilo dlouhé zlé období; osm lidí odešlo z pouště do stepi.",
+      "tick": 674,
+      "model": "claude-opus-5",
+      "createdAtMs": 1787175154883
     }
   }
 }
