@@ -1,15 +1,15 @@
 {
-  "updatedAtMs": 1787112593128,
-  "globalTick": 605,
-  "nextTickAtMs": 1787113239494,
+  "updatedAtMs": 1787119101788,
+  "globalTick": 612,
+  "nextTickAtMs": 1787119539494,
   "run": 1,
   "planet": "Urnotar",
-  "epoch": 0,
-  "epochName": "Úsvit",
-  "year": 2420000,
-  "foundingYear": null,
-  "population": 281.73264522753504,
-  "milestonesUnlocked": 9,
+  "epoch": 1,
+  "epochName": "Neolit",
+  "year": 2436036,
+  "foundingYear": 2436000,
+  "population": 175.9018082313217,
+  "milestonesUnlocked": 10,
   "milestonesTotal": 161,
   "factions": 1,
   "settlements": 2,
@@ -18,5 +18,5 @@
   "predictionsPending": 10,
   "predictionsResolved": 8,
   "brier": 0.125625,
-  "headline": "tick 605 · civilizace 1 na Urnotar · Úsvit · 2.42 mil. let stáří · 282 obyvatel"
+  "headline": "tick 612 · civilizace 1 na Urnotar · Neolit · rok 36 · 176 obyvatel"
 }
