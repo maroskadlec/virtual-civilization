@@ -80,6 +80,14 @@
       "tick": 866,
       "model": "claude-opus-5",
       "createdAtMs": 1787347880631
+    },
+    "digest:962": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé tisíciletí bylo pro Dóvauth řadou ran, které se opakovaly do únavy: propadající se země, kalné studny, tříletá sucha, povodně, mor a hladové vzpoury. Jednotlivě braly po jednom až pěti lidech, dohromady desítky. Osada přesto zůstala jediná a obyvatel je devětaosmdesát.\n\nJediná změna směru přišla roku 251 204. Pod tlakem hladu dosáhli Zaklínači soumraku domestikace zvířat — vlk u ohně, koza v ohradě. Jedenáctý milník. Dvakrát také sopečný popel přinesl neobvykle úrodnou půdu. Jinak civilizace jen vydržela.",
+      "tick": 962,
+      "model": "claude-opus-5",
+      "createdAtMs": 1787434111153
     }
   }
 }
