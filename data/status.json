@@ -1,14 +1,14 @@
 {
-  "updatedAtMs": 1787435508242,
-  "globalTick": 964,
-  "nextTickAtMs": 1787436339494,
+  "updatedAtMs": 1787437757042,
+  "globalTick": 966,
+  "nextTickAtMs": 1787438139494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 1,
   "epochName": "Neolit",
-  "year": 2687516,
+  "year": 2687540,
   "foundingYear": 2436000,
-  "population": 91.8322683328554,
+  "population": 94.27270604273183,
   "milestonesUnlocked": 11,
   "milestonesTotal": 161,
   "factions": 1,
@@ -18,5 +18,5 @@
   "predictionsPending": 11,
   "predictionsResolved": 20,
   "brier": 0.12458499999999999,
-  "headline": "tick 964 · civilizace 1 na Urnotar · Neolit · rok 251 516 · 92 obyvatel"
+  "headline": "tick 966 · civilizace 1 na Urnotar · Neolit · rok 251 540 · 94 obyvatel"
 }
