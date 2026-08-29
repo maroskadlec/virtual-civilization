@@ -128,6 +128,14 @@
       "tick": 1474,
       "model": "claude-opus-5",
       "createdAtMs": 1787895309728
+    },
+    "digest:1585": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Za posledních zhruba dvanáct set let Zymlobrom zanikala a znovu vstávala tolikrát, že se výčet pohrom slévá v jednu větu: zemětřesení, sesuvy, sucha, záplavy, sopečný popel a opakované dopady kamenů z nebe, z nichž dva vzaly pokaždé desetinu obyvatel. Osada přesto stojí a lidí je 214. Podstatnější než škody jsou tři věci, které zůstaly. Zaklínači soumraku přijali trvalou osadu, pak směnu mezi tlupami a nakonec — pod tlakem hladu po vyschlých pramenech — zavlažování. Ve stejném roce se ustavil kult předků. Mrtvých je mnoho a nově mluví do porad živých.",
+      "tick": 1585,
+      "model": "claude-opus-5",
+      "createdAtMs": 1787995147585
     }
   }
 }
