@@ -1,14 +1,14 @@
 {
-  "updatedAtMs": 1788103060943,
-  "globalTick": 1705,
-  "nextTickAtMs": 1788103239494,
+  "updatedAtMs": 1788115507495,
+  "globalTick": 1719,
+  "nextTickAtMs": 1788115839494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 2,
   "epochName": "Doba bronzová",
-  "year": 2695536,
+  "year": 2695592,
   "foundingYear": 2436000,
-  "population": 363.6135004505288,
+  "population": 403.4738082840111,
   "milestonesUnlocked": 21,
   "milestonesTotal": 161,
   "factions": 1,
@@ -18,5 +18,5 @@
   "predictionsPending": 9,
   "predictionsResolved": 40,
   "brier": 0.11237249999999999,
-  "headline": "tick 1705 · civilizace 1 na Urnotar · Doba bronzová · rok 259 536 · 364 obyvatel"
+  "headline": "tick 1719 · civilizace 1 na Urnotar · Doba bronzová · rok 259 592 · 403 obyvatel"
 }
