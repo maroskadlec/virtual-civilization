@@ -168,6 +168,14 @@
       "tick": 2016,
       "model": "claude-opus-5",
       "createdAtMs": 1788382508326
+    },
+    "digest:2116": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé tři století patřily rozpadu a rozchodu. Mlódróth se dvakrát propadla do vlastních studní, Zeimeith zdecimovala nemoc a nakonec srovnaly otřesy, Dromlóbry vzala voda a pak země. K tomu opakované vysychání pramenů u Vódomól a Zymlobrom a náraz z oblohy v roce 261 064, jaký nikdo nepamatoval třináct set let. Odpovědí bylo stěhování: vznikly Drauzós, Mydrauvók, Vomlaumló, Volbrósdról a Dymleildreik, osad je nyní jedenáct. Podstatnější než ztráty jsou však dva zisky Zaklínačů soumraku: písmo a tavení mědi, druhé zásluhou učence Vaudeimy.",
+      "tick": 2116,
+      "model": "claude-opus-5",
+      "createdAtMs": 1788472298135
     }
   }
 }
