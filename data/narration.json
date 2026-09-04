@@ -176,6 +176,14 @@
       "tick": 2116,
       "model": "claude-opus-5",
       "createdAtMs": 1788472298135
+    },
+    "digest:2213": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Doba bronzová skončila v roce 261 296 po 2 196 letech; za ni civilizace vyrostla z dvou set na víc než šest tisíc lidí a zvládla deset milníků. Před jejím koncem přišly Počty, Kolo, hvězdářství, pluh a keramické stavitelství — většinu z toho nesla učenka Dauna, která zemřela roku 261 236. Nová železná epocha začala bronzem a vzápětí bronzovými zbraněmi: válka se stala řemeslem. Pak přišly tři rány. Náraz z oblohy roku 261 350 vzal 207 životů, propadlá Zeimeith 167, povodeň ve Vódomólu šestnáct a zásoby na zimu.",
+      "tick": 2213,
+      "model": "claude-opus-5",
+      "createdAtMs": 1788560264485
     }
   }
 }
