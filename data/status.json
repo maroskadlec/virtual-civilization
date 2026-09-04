@@ -1,15 +1,15 @@
 {
-  "updatedAtMs": 1788528383332,
-  "globalTick": 2178,
-  "nextTickAtMs": 1788528939494,
+  "updatedAtMs": 1788541224496,
+  "globalTick": 2192,
+  "nextTickAtMs": 1788541539494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 3,
   "epochName": "Doba železná",
-  "year": 2697362,
+  "year": 2697390,
   "foundingYear": 2436000,
-  "population": 11439.51217518953,
-  "milestonesUnlocked": 32,
+  "population": 12888.585999068257,
+  "milestonesUnlocked": 33,
   "milestonesTotal": 161,
   "factions": 1,
   "settlements": 11,
@@ -18,5 +18,5 @@
   "predictionsPending": 6,
   "predictionsResolved": 53,
   "brier": 0.1258188679245283,
-  "headline": "tick 2178 · civilizace 1 na Urnotar · Doba železná · rok 261 362 · 11 440 obyvatel"
+  "headline": "tick 2192 · civilizace 1 na Urnotar · Doba železná · rok 261 390 · 12 889 obyvatel"
 }
