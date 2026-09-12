@@ -232,6 +232,14 @@
       "tick": 2845,
       "model": "claude-opus-5",
       "createdAtMs": 1789128561864
+    },
+    "digest:2948": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulý úsek přinesl jednu ztrátu, která se nedá vzít zpět. Mor putoval po obchodních stezkách a Módrauzóth zavřela brány příliš pozdě. Zemřelo 2 752 lidí, více než polovina obyvatel, a osada zanikla. Byla pětadvacátá, o kterou civilizace přišla. O deset let později odešlo z Mlódróth 1 315 lidí a založili ve stepi Mul — jediný pohyb vpřed v jinak ubývajícím období. Kolem Zyzaumvym pak vyschly prameny a 309 lidí zemřelo žízní. Celkem zůstává dvaatřicet osad a 125 121 obyvatel.",
+      "tick": 2948,
+      "model": "claude-opus-5",
+      "createdAtMs": 1789221523774
     }
   }
 }
