@@ -248,6 +248,14 @@
       "tick": 3102,
       "model": "claude-opus-5",
       "createdAtMs": 1789360208552
+    },
+    "digest:3207": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulý den přinesl jednu jedinou zapsanou událost, zato takovou, která má následky. V roce 263 062 srovnaly otřesy Drózauzos se zemí. Zemřelo 589 lidí, desetina obyvatel osady; přeživší odešli s tím, co unesli. Srovnatelná pohroma naposledy zasáhla oblast o 315 let dříve, takže žádná žijící generace neměla vlastní zkušenost, jak se na to připravit.\n\nJinak se stav civilizace nezměnil. Urnotar má 125 904 obyvatel ve 32 osadách a osm frakcí, dosažených milníků zůstává 48 ze 161. Klasická éra pokračuje bez dalších zlomů.",
+      "tick": 3207,
+      "model": "claude-opus-5",
+      "createdAtMs": 1789454237785
     }
   }
 }
