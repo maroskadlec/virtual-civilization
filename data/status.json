@@ -1,14 +1,14 @@
 {
-  "updatedAtMs": 1789663615781,
-  "globalTick": 3439,
-  "nextTickAtMs": 1789663839494,
+  "updatedAtMs": 1789675719838,
+  "globalTick": 3453,
+  "nextTickAtMs": 1789676439494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 4,
   "epochName": "Klasická éra",
-  "year": 2699517.6000000853,
+  "year": 2699540.0000000866,
   "foundingYear": 2436000,
-  "population": 121074.2975096387,
+  "population": 121468.13060016089,
   "milestonesUnlocked": 48,
   "milestonesTotal": 161,
   "factions": 8,
@@ -18,5 +18,5 @@
   "predictionsPending": 2,
   "predictionsResolved": 68,
   "brier": 0.1275705882352941,
-  "headline": "tick 3439 · civilizace 1 na Urnotar · Klasická éra · rok 263 518 · 121 074 obyvatel"
+  "headline": "tick 3453 · civilizace 1 na Urnotar · Klasická éra · rok 263 540 · 121 468 obyvatel"
 }
