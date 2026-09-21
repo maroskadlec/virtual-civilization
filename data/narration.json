@@ -296,6 +296,14 @@
       "tick": 3717,
       "model": "claude-opus-5",
       "createdAtMs": 1789914010283
+    },
+    "digest:3814": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé období bylo pro Urnotar převážně ztrátové. Čtyři pohromy za necelé půlstoletí: propadlá půda pod Vrá s trvale zakalenými studnami, zánik Bródrozythu, mor, který Drovól zavřela příliš pozdě, a dopad kamene z nebe, jenž z Mauzodoku udělal kráter a zabil 1 088 lidí. Později přišla ještě epidemie ve Vomlaumló. Dohromady přes dva tisíce mrtvých.\n\nDvě věci mají delší dosah. Zaklínači šedého úsvitu sestavili sluneční kalendář, dost přesný na plánování setby. A dva tisíce lidí z Vomlaumló odešlo do stepi a založilo Moto — osada tak vznikla ještě před tamní epidemií.",
+      "tick": 3814,
+      "model": "claude-opus-5",
+      "createdAtMs": 1790000976580
     }
   }
 }
