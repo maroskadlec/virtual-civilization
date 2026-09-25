@@ -328,6 +328,14 @@
       "tick": 4127,
       "model": "claude-opus-5",
       "createdAtMs": 1790282650053
+    },
+    "digest:4231": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Dvě pohromy a tři změny. Záplava roku 264 645 vzala ohrady i pole a s nimi desetinu lidí — 742 mrtvých; bahno po ní ale zůstalo úrodné, takže ztráta se aspoň částečně vrátila v půdě. O necelých šedesát let později přišel tříletý bezdeštěk, stáda pošla dřív než lidé, zemřelo 384 osob.\n\nPodstatnější je linie vědění. Věštci úsvitu založili lékařskou školu; léčení přestalo být majetkem jednotlivců a zůstalo u toho jméno Kyla. Na to navázali Zbloudilí chirurgií, spojenou s Drausinou. Mezitím odešlo 889 lidí z Geivrithvrith a založilo ve stepi Sigugi.",
+      "tick": 4231,
+      "model": "claude-opus-5",
+      "createdAtMs": 1790376351337
     }
   }
 }
