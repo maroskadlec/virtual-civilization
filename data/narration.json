@@ -344,6 +344,14 @@
       "tick": 4327,
       "model": "claude-opus-5",
       "createdAtMs": 1790462268705
+    },
+    "digest:4428": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé dvě století byla pro Urnotar řada ztrát bez zjevného konce. Hlad opakovaně roztrhl osady zevnitř — Zymlobrom, Mleidrozau, Braumaul a nakonec i Mul, pokaždé s tisícem mrtvých a vždy zhruba desetinou obyvatel. K tomu otřesy, které Mul srovnaly už roku 265 093, sucho u Neisku, tříletý bezdeštný úsek a povodeň, jež vzala Moto i se zimními zásobami; něco podobného se naposledy stalo před 566 lety.\n\nJediná trvalá změna přišla roku 265 101. Věštci měsíčního světla prosadili vodní mlýn, připisovaný Steigilovi Bledému — první stroj, který pracuje bez obsluhy. Populace činí 302 460 obyvatel ve 38 osadách.",
+      "tick": 4428,
+      "model": "claude-opus-5",
+      "createdAtMs": 1790553245418
     }
   }
 }
