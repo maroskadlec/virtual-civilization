@@ -384,6 +384,14 @@
       "tick": 4877,
       "model": "claude-opus-5",
       "createdAtMs": 1790957509643
+    },
+    "digest:4983": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé století bylo pro Urnotar ztrátové. Vomlaumló a Geivrithvrith zmizely z mapy, každá se ztrátou přes dvanáct tisíc lidí — počet zaniklých osad stoupl na dvaatřicet. Zemětřesení, sucha, hlad a lávový proud ubraly další tisíce v Zómaus, Deimlym, Braumaul, Dromlóbry a Maumlaumaus.\n\nPodstatnější než pohromy jsou dvě mizení. Válka Kameníků černého písku se Zbloudilými skončila roku 266 199 vyčerpáním; vojevůdce Krebraund si podrobil jednu osadu a Zbloudilí zanikli jako společenství. O čtrnáct let později se rozpadli i Zaklínači šedého úsvitu. Zbývá šest frakcí.\n\nSaul mezitím vyslal dvě vlny osadníků a založil Syl a Kol.",
+      "tick": 4983,
+      "model": "claude-opus-5",
+      "createdAtMs": 1791053320723
     }
   }
 }
