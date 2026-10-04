@@ -392,6 +392,14 @@
       "tick": 4983,
       "model": "claude-opus-5",
       "createdAtMs": 1791053320723
+    },
+    "digest:5092": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Dvě odtržení určila tvář posledních dvou století. Roku 266 427 se Rudí ve zlém oddělili od Kovářů dlouhé zimy a odvedli si tři osady s 36 246 lidmi; šlo o devátý rozkol v jejich dějinách. O sto dvacet let později, roku 266 549, opustili Kameníci nízkého nebe Zaklínače soumraku a vzali s sebou pět osad a 58 969 obyvatel. Deset rozkolů za sebou znamená, že štěpení je zde pravidlem, nikoli výjimkou. Vedle toho zánik Zómausu po otřesech roku 266 369 se 481 mrtvými a zelená záře nad obzorem roku 266 563, jakou nikdo nepamatoval tisíc let, s 261 oběťmi.",
+      "tick": 5092,
+      "model": "claude-opus-5",
+      "createdAtMs": 1791150657331
     }
   }
 }
