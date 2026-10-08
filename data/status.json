@@ -1,14 +1,14 @@
 {
-  "updatedAtMs": 1791405120348,
-  "globalTick": 5374,
-  "nextTickAtMs": 1791405339494,
+  "updatedAtMs": 1791420844920,
+  "globalTick": 5392,
+  "nextTickAtMs": 1791421539494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 5,
   "epochName": "Věk víry",
-  "year": 2703133.2000001445,
+  "year": 2703169.2000001445,
   "foundingYear": 2436000,
-  "population": 529671.3825429777,
+  "population": 537206.8362186467,
   "milestonesUnlocked": 60,
   "milestonesTotal": 161,
   "factions": 8,
@@ -18,5 +18,5 @@
   "predictionsPending": 3,
   "predictionsResolved": 91,
   "brier": 0.14088241758241757,
-  "headline": "tick 5374 · civilizace 1 na Urnotar · Věk víry · rok 267 133 · 529 671 obyvatel"
+  "headline": "tick 5392 · civilizace 1 na Urnotar · Věk víry · rok 267 169 · 537 207 obyvatel"
 }
