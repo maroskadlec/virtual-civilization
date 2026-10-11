@@ -440,6 +440,14 @@
       "tick": 5632,
       "model": "claude-opus-5",
       "createdAtMs": 1791637094778
+    },
+    "digest:5730": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé dvě století byla sled otřesů. Zemětřesení smetla Drovól, pohltila Volbrósdról a Mydrauvók, rozestoupila půdu pod Zómaus a zkazila tamní studny na generace. Nejtěžší ránou byl rok 267 719: Saul ztratil přes polovinu obyvatel, zaniklo město a civilizace přišla o třiatřicátou osadu. Následovalo sucho u Deimlym, povodeň, která vzala Mauzodok i zimní zásoby, a roku 267 835 pád tělesa z oblohy, slyšitelný přes celý kontinent, s téměř čtyřmi tisíci mrtvých.\n\nJediný krok vpřed: roku 267 751 odešlo z Dromlóbry přes pět tisíc lidí a založili ve stepi Mlomlaust.",
+      "tick": 5730,
+      "model": "claude-opus-5",
+      "createdAtMs": 1791724930692
     }
   }
 }
