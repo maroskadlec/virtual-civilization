@@ -1,14 +1,14 @@
 {
-  "updatedAtMs": 1792611041056,
-  "globalTick": 6714,
-  "nextTickAtMs": 1792611339494,
+  "updatedAtMs": 1792624149458,
+  "globalTick": 6729,
+  "nextTickAtMs": 1792624839494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 6,
   "epochName": "Věk objevů",
-  "year": 2705109.0000001914,
+  "year": 2705118.000000193,
   "foundingYear": 2436000,
-  "population": 1099736.5132051753,
+  "population": 1104068.308176343,
   "milestonesUnlocked": 66,
   "milestonesTotal": 161,
   "factions": 8,
@@ -18,5 +18,5 @@
   "predictionsPending": 1,
   "predictionsResolved": 103,
   "brier": 0.1419650485436893,
-  "headline": "tick 6714 · civilizace 1 na Urnotar · Věk objevů · rok 269 109 · 1 099 737 obyvatel"
+  "headline": "tick 6729 · civilizace 1 na Urnotar · Věk objevů · rok 269 118 · 1 104 068 obyvatel"
 }
