@@ -528,6 +528,14 @@
       "tick": 6830,
       "model": "claude-opus-5",
       "createdAtMs": 1792715440502
+    },
+    "digest:6932": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Dva zápisy stojí za zmínku. V roce 269 198 přeťala oblohu ohnivá čára a náraz byl slyšet přes celý kontinent; podobná rána naposledy dopadla před 481 lety. Zahynulo 5 722 lidí, tedy každý pátý ze zasažených. O sedmadvacet let později skončila vyčerpáním válka Kameníků černého písku s Věštci úsvitu. Věštci pod vedením vojevůdkyně Mudody si podrobili jednu osadu protivníka. Cenou bylo 16 671 padlých, a to válce předcházelo sedmačtyřicet let klidu. Jinak civilizace drží 41 osad, osm frakcí a 66 milníků ze 161.",
+      "tick": 6932,
+      "model": "claude-opus-5",
+      "createdAtMs": 1792806816209
     }
   }
 }
