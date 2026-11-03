@@ -600,6 +600,14 @@
       "tick": 7869,
       "model": "claude-opus-5",
       "createdAtMs": 1793650261878
+    },
+    "digest:7979": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulý den přinesl konec tří vyčerpaných válek a jeden zánik. Rudí porazili Kameníky nízkého nebe, vzali jim osadu a společenství Kameníků roku 269 828 přestalo existovat; padlo 15 812 lidí. Vítězství však Rudé neposílilo: o čtrnáct let později se od nich odtrhli Synové kostěné stezky s osadou o 19 187 obyvatelích, třináctý rozkol v jejich dějinách. Kováři dlouhé zimy a Sběrači rudého kamene si rovněž odnesli po jedné osadě, Kováři za cenu 104 716 mrtvých. Nositelé Modré rokle postavili první větrný mlýn. Z Dozaumleil odešlo 11 764 lidí a založili stepní Meitárn.",
+      "tick": 7979,
+      "model": "claude-opus-5",
+      "createdAtMs": 1793749000124
     }
   }
 }
