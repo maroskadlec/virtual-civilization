@@ -656,6 +656,14 @@
       "tick": 8655,
       "model": "claude-opus-5",
       "createdAtMs": 1794358233711
+    },
+    "digest:8763": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulé desetiletí bylo pro Urnotar tvrdé. Roku 270 303 se pod Syl propadla půda a studny zůstaly kalné po generace; zahynulo 1 572 lidí. O šestnáct let později se roztrhla hora nad Drámem. Popel zastínil slunce, zemřelo 50 420 obyvatel, více než polovina osady, a Drám zanikl jako osmatřicátá ztracená osada. Roku 270 326 odešlo z Mlódróth 17 710 lidí a založili ve stepi Zozómlom. Nejtrvalejší následek má ale rok 270 331: Tiší zvládli knihtisk. Od té chvíle se myšlenky šíří rychleji, než je stihne někdo zakázat.",
+      "tick": 8763,
+      "model": "claude-opus-5",
+      "createdAtMs": 1794455103305
     }
   }
 }
