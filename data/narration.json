@@ -728,6 +728,14 @@
       "tick": 9696,
       "model": "claude-opus-5",
       "createdAtMs": 1795294934657
+    },
+    "digest:9802": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Rok 270 722 přinesl událost, jakou Urnotar nezažil od předchozího dopadu před osmi sty lety. Meteorit zasáhl Dromlóbry a na jejím místě zůstal kráter. Zahynulo 44 275 lidí, tedy víc než polovina obyvatel osady; zbytek sídlo neudržel. Dromlóbry se tak stala čtyřicátou osadou, kterou civilizace ztratila. Ve stejném roce opustilo 20 190 lidí Breivym a ve stepi založili Drymlyvos. Zda šlo o reakci na katastrofu, data neříkají. Celkový počet osad zůstává 45, obyvatel přes 1,95 milionu. Jinak se v tomto úseku nic podstatného neodehrálo.",
+      "tick": 9802,
+      "model": "claude-opus-5",
+      "createdAtMs": 1795390225396
     }
   }
 }
