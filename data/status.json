@@ -1,15 +1,15 @@
 {
-  "updatedAtMs": 1795584088239,
-  "globalTick": 10018,
-  "nextTickAtMs": 1795584939494,
+  "updatedAtMs": 1795622304779,
+  "globalTick": 10060,
+  "nextTickAtMs": 1795622739494,
   "run": 1,
   "planet": "Urnotar",
   "epoch": 7,
   "epochName": "Osvícenství",
-  "year": 2706816.600000243,
+  "year": 2706829.2000002353,
   "foundingYear": 2436000,
-  "population": 2178570.20619223,
-  "milestonesUnlocked": 75,
+  "population": 2268869.7681191205,
+  "milestonesUnlocked": 76,
   "milestonesTotal": 161,
   "factions": 8,
   "settlements": 46,
@@ -18,5 +18,5 @@
   "predictionsPending": 1,
   "predictionsResolved": 137,
   "brier": 0.15704233576642337,
-  "headline": "tick 10018 · civilizace 1 na Urnotar · Osvícenství · rok 270 817 · 2 178 570 obyvatel"
+  "headline": "tick 10060 · civilizace 1 na Urnotar · Osvícenství · rok 270 829 · 2 268 870 obyvatel"
 }
