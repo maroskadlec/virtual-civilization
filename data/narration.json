@@ -752,6 +752,14 @@
       "tick": 10018,
       "model": "claude-opus-5",
       "createdAtMs": 1795584116826
+    },
+    "digest:10127": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Uplynulý úsek přinesl dvě události, které stojí za zmínku. V roce 270 829 zavedli Zaklínači soumraku nové plodiny — přišlo to pod tlakem hladu a rozhodlo to o tom, že cizí rostliny uživí víc lidí než domácí. Se změnou je spojeno jméno Voba. O čtyři roky později odešlo z Mul 19 066 lidí a na vysočině založili osadu Maudrost; počet osad tak vzrostl na 47. Jinak se poměry nepohnuly: osmdesát frakcí zůstalo osm, obyvatel je 2 812 811, splněných milníků 76 ze 161.",
+      "tick": 10127,
+      "model": "claude-opus-5",
+      "createdAtMs": 1795682990331
     }
   }
 }
