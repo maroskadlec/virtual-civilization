@@ -768,6 +768,14 @@
       "tick": 10233,
       "model": "claude-opus-5",
       "createdAtMs": 1795778368964
+    },
+    "digest:10330": {
+      "kind": "digest",
+      "run": 1,
+      "text": "Nejvýznamnější událostí uplynulého období byl konec války mezi Kováři dlouhé zimy a Věštci úsvitu v roce 270 881. Neskončila vítězstvím, nýbrž vyčerpáním obou stran. Kováři si přesto podrželi jednu dobytou osadu Věštců; vojsku velela vojevůdkyně Sámleima Štědrá. Ztráty dosáhly 137 481 mrtvých, což je číslo, které bude poznamenávat obě frakce i v dalších desetiletích.\n\nO třiadvacet let později, roku 270 904, dopadl na osadu Zovóm kámen z nebe. Na jejím místě zůstal kráter a zahynula desetina obyvatel, 3 053 lidí.\n\nJinak epocha Osvícenství pokračuje bez zvratu: 47 osad, sedm frakcí, 76 dosažených milníků.",
+      "tick": 10330,
+      "model": "claude-opus-5",
+      "createdAtMs": 1795865761586
     }
   }
 }
